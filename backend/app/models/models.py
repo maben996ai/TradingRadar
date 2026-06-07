@@ -107,7 +107,7 @@ class DataSource(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="data_sources")
-    videos: Mapped[list["Video"]] = relationship(
+    content_items: Mapped[list["ContentItem"]] = relationship(
         back_populates="data_source", cascade="all, delete-orphan"
     )
     crawl_logs: Mapped[list["CrawlLog"]] = relationship(
@@ -115,11 +115,11 @@ class DataSource(Base):
     )
 
 
-class Video(Base):
-    __tablename__ = "videos"
+class ContentItem(Base):
+    __tablename__ = "content_items"
     __table_args__ = (
         UniqueConstraint(
-            "data_source_id", "platform_video_id", name="uq_videos_data_source_platform_video"
+            "data_source_id", "platform_id", name="uq_content_items_data_source_platform"
         ),
     )
 
@@ -127,10 +127,10 @@ class Video(Base):
     data_source_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("data_sources.id"), index=True
     )
-    platform_video_id: Mapped[str] = mapped_column(String(255), index=True)
+    platform_id: Mapped[str] = mapped_column(String(255), index=True)
     title: Mapped[str] = mapped_column(String(500))
     thumbnail_url: Mapped[str | None] = mapped_column(Text(), nullable=True)
-    video_url: Mapped[str] = mapped_column(Text())
+    content_url: Mapped[str] = mapped_column(Text())
     published_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -140,7 +140,7 @@ class Video(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    data_source: Mapped[DataSource] = relationship(back_populates="videos")
+    data_source: Mapped[DataSource] = relationship(back_populates="content_items")
 
 
 class FeishuWebhook(Base):
@@ -165,7 +165,7 @@ class CrawlLog(Base):
     )
     status: Mapped[str] = mapped_column(String(50), default=CrawlLogStatus.SUCCESS)
     message: Mapped[str | None] = mapped_column(Text(), nullable=True)
-    videos_found: Mapped[int] = mapped_column(default=0)
+    items_found: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     data_source: Mapped[DataSource] = relationship(back_populates="crawl_logs")

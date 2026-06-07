@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
-from app.models.models import CrawlLogStatus, DataSource, CrawlLog, FeishuWebhook, Video
+from app.models.models import ContentItem, CrawlLogStatus, DataSource, CrawlLog, FeishuWebhook
 from app.services.crawlers.registry import crawler_registry
 from app.services.notifiers.feishu import FeishuNotifier
 
@@ -61,23 +61,25 @@ async def crawl_source(source: DataSource) -> int:
 
     async with AsyncSessionLocal() as db:
         existing_count = await db.scalar(
-            select(func.count()).select_from(Video).where(Video.data_source_id == source.id)
+            select(func.count())
+            .select_from(ContentItem)
+            .where(ContentItem.data_source_id == source.id)
         )
 
     is_first_crawl = (existing_count or 0) == 0
     limit = FIRST_CRAWL_LIMIT if is_first_crawl else INCREMENTAL_CRAWL_LIMIT
 
-    videos = await crawler.fetch_latest_videos(source.external_id, limit=limit)
+    items = await crawler.fetch_latest_items(source.external_id, limit=limit)
 
     inserted_count = 0
     async with AsyncSessionLocal() as db:
-        if not videos:
+        if not items:
             db.add(
                 CrawlLog(
                     data_source_id=source.id,
                     status=CrawlLogStatus.SUCCESS,
                     message=None,
-                    videos_found=0,
+                    items_found=0,
                 )
             )
             if is_first_crawl:
@@ -87,35 +89,35 @@ async def crawl_source(source: DataSource) -> int:
             await db.commit()
             return 0
 
-        fetched_ids = {v.platform_video_id for v in videos}
+        fetched_ids = {item.platform_id for item in items}
         existing_ids = set(
             await db.scalars(
-                select(Video.platform_video_id).where(
-                    Video.data_source_id == source.id,
-                    Video.platform_video_id.in_(fetched_ids),
+                select(ContentItem.platform_id).where(
+                    ContentItem.data_source_id == source.id,
+                    ContentItem.platform_id.in_(fetched_ids),
                 )
             )
         )
 
-        new_videos: list[Video] = []
-        for video in videos:
-            if video.platform_video_id in existing_ids:
+        new_items: list[ContentItem] = []
+        for item in items:
+            if item.platform_id in existing_ids:
                 continue
-            new_video = Video(
+            new_item = ContentItem(
                 data_source_id=source.id,
-                platform_video_id=video.platform_video_id,
-                title=video.title,
-                thumbnail_url=video.thumbnail_url,
-                video_url=video.video_url,
-                published_at=video.published_at,
-                raw_data=video.raw_data,
+                platform_id=item.platform_id,
+                title=item.title,
+                thumbnail_url=item.thumbnail_url,
+                content_url=item.content_url,
+                published_at=item.published_at,
+                raw_data=item.raw_data,
             )
-            db.add(new_video)
-            new_videos.append(new_video)
+            db.add(new_item)
+            new_items.append(new_item)
 
         # 首次抓取：除最新 1 条外，全部预标为已通知，避免"升级即爆量"
-        if is_first_crawl and len(new_videos) > 1:
-            sorted_new = sorted(new_videos, key=lambda v: v.published_at, reverse=True)
+        if is_first_crawl and len(new_items) > 1:
+            sorted_new = sorted(new_items, key=lambda v: v.published_at, reverse=True)
             now = datetime.now(UTC)
             for v in sorted_new[1:]:
                 v.notified_at = now
@@ -125,18 +127,18 @@ async def crawl_source(source: DataSource) -> int:
             if source_row is not None and source_row.initialized_at is None:
                 source_row.initialized_at = datetime.now(UTC)
 
-        inserted_count = len(new_videos)
+        inserted_count = len(new_items)
         db.add(
             CrawlLog(
                 data_source_id=source.id,
                 status=CrawlLogStatus.SUCCESS,
                 message=None,
-                videos_found=inserted_count,
+                items_found=inserted_count,
             )
         )
         await db.commit()
 
-    # 通知阶段：扫描 notified_at IS NULL 的待发视频，任一失败则保持 None 供下次重试
+    # 通知阶段：扫描 notified_at IS NULL 的待发内容，任一失败则保持 None 供下次重试
     if not source.notifications_enabled:
         return inserted_count
 
@@ -147,37 +149,40 @@ async def crawl_source(source: DataSource) -> int:
     async with AsyncSessionLocal() as db:
         pending = list(
             await db.scalars(
-                select(Video)
-                .where(Video.data_source_id == source.id, Video.notified_at.is_(None))
-                .order_by(Video.published_at.desc())
+                select(ContentItem)
+                .where(
+                    ContentItem.data_source_id == source.id,
+                    ContentItem.notified_at.is_(None),
+                )
+                .order_by(ContentItem.published_at.desc())
             )
         )
 
-    for video in pending:
+    for item in pending:
         all_ok = True
         for webhook_url in webhook_urls:
             try:
                 await _notifier.send_card(
                     webhook_url=webhook_url,
-                    title=video.title,
+                    title=item.title,
                     creator_name=source.name,
                     platform=source.source_type,
-                    video_url=video.video_url,
-                    thumbnail_url=video.thumbnail_url,
-                    published_at=video.published_at,
+                    content_url=item.content_url,
+                    thumbnail_url=item.thumbnail_url,
+                    published_at=item.published_at,
                     is_new_creator=is_first_crawl,
                 )
             except Exception as exc:
                 logger.warning(
-                    "Feishu notify failed for video=%s webhook=%s: %s",
-                    video.id,
+                    "Feishu notify failed for content_item=%s webhook=%s: %s",
+                    item.id,
                     webhook_url,
                     exc,
                 )
                 all_ok = False
         if all_ok:
             async with AsyncSessionLocal() as db:
-                row = await db.get(Video, video.id)
+                row = await db.get(ContentItem, item.id)
                 if row is not None:
                     row.notified_at = datetime.now(UTC)
                     await db.commit()
@@ -206,7 +211,7 @@ async def crawl_all_sources() -> None:
                     data_source_id=source.id,
                     status=CrawlLogStatus.FAILED,
                     message=str(exc),
-                    videos_found=0,
+                    items_found=0,
                 )
             )
         await db.commit()

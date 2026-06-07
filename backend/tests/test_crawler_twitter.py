@@ -22,35 +22,38 @@ TWITTER_USER_OK = {
 }
 
 TWITTER_TWEETS_OK = {
-    "tweets": [
-        {
-            "type": "tweet",
-            "id": "tweet001",
-            "url": "https://x.com/testuser/status/tweet001",
-            "text": "First post about markets",
-            "createdAt": "2026-06-06T12:30:00Z",
-            "author": {"userName": "testuser"},
-            "extendedEntities": {
-                "media": [
-                    {
-                        "type": "photo",
-                        "media_url_https": "https://example.com/media.jpg",
-                    }
-                ]
+    "data": {
+        "pin_tweet": None,
+        "tweets": [
+            {
+                "type": "tweet",
+                "id": "tweet001",
+                "url": "https://x.com/testuser/status/tweet001",
+                "text": "First post about markets",
+                "createdAt": "2026-06-06T12:30:00Z",
+                "author": {"userName": "testuser"},
+                "extendedEntities": {
+                    "media": [
+                        {
+                            "type": "photo",
+                            "media_url_https": "https://example.com/media.jpg",
+                        }
+                    ]
+                },
             },
-        },
-        {
-            "type": "tweet",
-            "id": "tweet002",
-            "text": "Second post",
-            "createdAt": "Sat Jun 06 10:00:00 +0000 2026",
-            "author": {"userName": "testuser"},
-        },
-    ],
+            {
+                "type": "tweet",
+                "id": "tweet002",
+                "text": "Second post",
+                "createdAt": "Sat Jun 06 10:00:00 +0000 2026",
+                "author": {"userName": "testuser"},
+            },
+        ],
+    },
     "has_next_page": False,
     "next_cursor": "",
     "status": "success",
-    "message": "ok",
+    "msg": "ok",
 }
 
 
@@ -92,19 +95,19 @@ class TestTwitterFetchLatestVideos:
 
         with patch("app.services.crawlers.twitter.settings") as mock_settings:
             mock_settings.twitterapi_io_api_key = "fake-key"
-            posts = await crawler.fetch_latest_videos("12345")
+            posts = await crawler.fetch_latest_items("12345")
 
         assert len(posts) == 2
-        assert posts[0].platform_video_id == "tweet001"
+        assert posts[0].platform_id == "tweet001"
         assert posts[0].title == "First post about markets"
-        assert posts[0].video_url == "https://x.com/testuser/status/tweet001"
+        assert posts[0].content_url == "https://x.com/testuser/status/tweet001"
         assert posts[0].thumbnail_url == "https://example.com/media.jpg"
         assert posts[0].published_at.year == 2026
-        assert posts[1].video_url == "https://x.com/testuser/status/tweet002"
+        assert posts[1].content_url == "https://x.com/testuser/status/tweet002"
 
     async def test_no_api_key_returns_empty_list(self):
         with patch("app.services.crawlers.twitter.settings") as mock_settings:
             mock_settings.twitterapi_io_api_key = ""
-            posts = await crawler.fetch_latest_videos("12345")
+            posts = await crawler.fetch_latest_items("12345")
 
         assert posts == []

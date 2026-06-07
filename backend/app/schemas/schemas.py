@@ -64,15 +64,16 @@ class DataSourceResponse(BaseModel):
     created_at: datetime
 
 
-class VideoResponse(BaseModel):
+class ContentItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     data_source_id: str
-    platform_video_id: str
+    platform_id: str
     title: str
+    content_text: str
     thumbnail_url: str | None
-    video_url: str
+    content_url: str
     published_at: datetime
     duration_seconds: int | None = None
     notified_at: datetime | None = None
@@ -95,8 +96,8 @@ class SettingsResponse(BaseModel):
     updated_at: datetime
 
 
-class VideoListResponse(BaseModel):
-    items: list["VideoResponse"]
+class ContentItemListResponse(BaseModel):
+    items: list["ContentItemResponse"]
     next_cursor: str | None
     has_more: bool
 
@@ -124,7 +125,7 @@ class FeishuWebhookResponse(BaseModel):
 
 class CrawlAcceptedResponse(BaseModel):
     status: CrawlLogStatus
-    videos_found: int
+    items_found: int
 
 
 class CrawlLogResponse(BaseModel):
@@ -134,5 +135,5 @@ class CrawlLogResponse(BaseModel):
     data_source_id: str
     status: CrawlLogStatus
     message: str | None
-    videos_found: int
+    items_found: int
     created_at: datetime

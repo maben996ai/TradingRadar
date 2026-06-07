@@ -26,22 +26,23 @@ export interface DataSource {
   source_config?: Record<string, unknown> | null;
 }
 
-export interface Video {
+export interface ContentItem {
   id: string;
   data_source_id: string;
-  platform_video_id: string;
+  platform_id: string;
   source_type: SourceType;
   title: string;
+  content_text: string;
   thumbnail_url?: string | null;
-  video_url: string;
+  content_url: string;
   published_at: string;
   duration_seconds?: number | null;
   data_source_name: string;
   data_source_avatar_url?: string | null;
 }
 
-export interface VideoListResponse {
-  items: Video[];
+export interface ContentItemListResponse {
+  items: ContentItem[];
   next_cursor: string | null;
   has_more: boolean;
 }

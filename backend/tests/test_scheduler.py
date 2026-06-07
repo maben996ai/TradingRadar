@@ -12,9 +12,9 @@ from app.models.models import (
     FeishuWebhook,
     SourceType,
     User,
-    Video,
+    ContentItem,
 )
-from app.services.crawlers.base import CrawledVideo
+from app.services.crawlers.base import CrawledItem
 from app.services.scheduler import SchedulerService, crawl_all_sources, crawl_source
 
 
@@ -33,14 +33,14 @@ def make_source(user_id: str, source_type: SourceType = SourceType.YOUTUBE) -> D
 
 
 def make_video(
-    platform_video_id: str = "BV001",
+    platform_id: str = "BV001",
     title: str = "Test Video",
     published_at: datetime | None = None,
-) -> CrawledVideo:
-    return CrawledVideo(
-        platform_video_id=platform_video_id,
+) -> CrawledItem:
+    return CrawledItem(
+        platform_id=platform_id,
         title=title,
-        video_url=f"https://www.bilibili.com/video/{platform_video_id}",
+        content_url=f"https://www.bilibili.com/video/{platform_id}",
         published_at=published_at or datetime(2024, 1, 1, tzinfo=UTC),
     )
 
@@ -88,7 +88,7 @@ class TestCrawlSource:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -99,9 +99,9 @@ class TestCrawlSource:
 
         assert inserted == 1
         async with session_factory() as s:
-            videos = list(await s.scalars(select(Video).where(Video.data_source_id == source.id)))
+            videos = list(await s.scalars(select(ContentItem).where(ContentItem.data_source_id == source.id)))
         assert len(videos) == 1
-        assert videos[0].platform_video_id == "BV001"
+        assert videos[0].platform_id == "BV001"
 
     async def test_duplicate_videos_are_not_reinserted(self, db, session_factory):
         user = make_user()
@@ -110,18 +110,18 @@ class TestCrawlSource:
         source = make_source(user.id)
         db.add(source)
         await db.flush()
-        existing = Video(
+        existing = ContentItem(
             data_source_id=source.id,
-            platform_video_id="BV001",
+            platform_id="BV001",
             title="Existing",
-            video_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.bilibili.com/video/BV001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(existing)
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -141,7 +141,7 @@ class TestCrawlSource:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -154,7 +154,7 @@ class TestCrawlSource:
             log = await s.scalar(select(CrawlLog).where(CrawlLog.data_source_id == source.id))
         assert log is not None
         assert log.status == CrawlLogStatus.SUCCESS
-        assert log.videos_found == 1
+        assert log.items_found == 1
 
     async def test_empty_crawl_creates_log_with_zero_videos(self, db, session_factory):
         user = make_user()
@@ -165,7 +165,7 @@ class TestCrawlSource:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -177,7 +177,7 @@ class TestCrawlSource:
         assert inserted == 0
         async with session_factory() as s:
             log = await s.scalar(select(CrawlLog).where(CrawlLog.data_source_id == source.id))
-        assert log.videos_found == 0
+        assert log.items_found == 0
 
 
 class TestCrawlSourceDedup:
@@ -189,19 +189,19 @@ class TestCrawlSourceDedup:
         source = make_source(user.id)
         db.add(source)
         await db.flush()
-        existing = Video(
+        existing = ContentItem(
             data_source_id=source.id,
-            platform_video_id="BV001",
+            platform_id="BV001",
             title="Original Title",
             thumbnail_url="https://cdn/old.jpg",
-            video_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.bilibili.com/video/BV001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(existing)
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(
+        mock_crawler.fetch_latest_items = AsyncMock(
             return_value=[make_video("BV001", title="Updated Title")]
         )
 
@@ -213,7 +213,7 @@ class TestCrawlSourceDedup:
             await crawl_source(source)
 
         async with session_factory() as s:
-            row = await s.scalar(select(Video).where(Video.platform_video_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
         assert row.title == "Original Title"
         assert row.thumbnail_url == "https://cdn/old.jpg"
 
@@ -233,7 +233,7 @@ class TestCrawlSourceInitialization:
         assert row.initialized_at is None
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -257,7 +257,7 @@ class TestCrawlSourceInitialization:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -280,11 +280,11 @@ class TestCrawlSourceInitialization:
         source.initialized_at = initialized
         db.add(source)
         await db.flush()
-        existing = Video(
+        existing = ContentItem(
             data_source_id=source.id,
-            platform_video_id="BV001",
+            platform_id="BV001",
             title="Existing",
-            video_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.bilibili.com/video/BV001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
             notified_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
@@ -292,7 +292,7 @@ class TestCrawlSourceInitialization:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV002")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV002")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -333,7 +333,7 @@ class TestCrawlSourceNotifications:
             make_video("BV001", title="oldest", published_at=base),
         ]
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=crawled)
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=crawled)
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -346,7 +346,7 @@ class TestCrawlSourceNotifications:
         mock_send.assert_awaited_once()
         _, kwargs = mock_send.await_args
         assert kwargs["title"] == "newest"
-        assert kwargs["video_url"].endswith("BV003")
+        assert kwargs["content_url"].endswith("BV003")
         assert kwargs["is_new_creator"] is True
 
     async def test_first_crawl_premarks_older_videos_as_notified(self, db, session_factory):
@@ -365,7 +365,7 @@ class TestCrawlSourceNotifications:
             make_video("BV001", title="oldest", published_at=base),
         ]
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=crawled)
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=crawled)
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -378,9 +378,9 @@ class TestCrawlSourceNotifications:
         async with session_factory() as s:
             rows = list(
                 await s.scalars(
-                    select(Video)
-                    .where(Video.data_source_id == source.id)
-                    .order_by(Video.published_at.desc())
+                    select(ContentItem)
+                    .where(ContentItem.data_source_id == source.id)
+                    .order_by(ContentItem.published_at.desc())
                 )
             )
         assert len(rows) == 3
@@ -405,7 +405,7 @@ class TestCrawlSourceNotifications:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -417,7 +417,7 @@ class TestCrawlSourceNotifications:
 
         mock_send.assert_awaited()
         async with session_factory() as s:
-            row = await s.scalar(select(Video).where(Video.platform_video_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
         assert row.notified_at is not None
 
     async def test_failed_notification_leaves_notified_at_null(self, db, session_factory):
@@ -438,7 +438,7 @@ class TestCrawlSourceNotifications:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -452,7 +452,7 @@ class TestCrawlSourceNotifications:
             await crawl_source(source)
 
         async with session_factory() as s:
-            row = await s.scalar(select(Video).where(Video.platform_video_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
         assert row.notified_at is None
 
     async def test_retry_succeeds_after_previous_failure(self, db, session_factory):
@@ -471,11 +471,11 @@ class TestCrawlSourceNotifications:
                 enabled=True,
             )
         )
-        existing = Video(
+        existing = ContentItem(
             data_source_id=source.id,
-            platform_video_id="BV001",
+            platform_id="BV001",
             title="pending",
-            video_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.bilibili.com/video/BV001",
             published_at=datetime(2024, 6, 1, tzinfo=UTC),
             notified_at=None,
         )
@@ -483,7 +483,7 @@ class TestCrawlSourceNotifications:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_videos = AsyncMock(
+        mock_crawler.fetch_latest_items = AsyncMock(
             return_value=[make_video("BV001", title="pending")]
         )
 
@@ -497,7 +497,7 @@ class TestCrawlSourceNotifications:
 
         mock_send.assert_awaited()
         async with session_factory() as s:
-            row = await s.scalar(select(Video).where(Video.platform_video_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
         assert row.notified_at is not None
 
 
@@ -523,3 +523,32 @@ class TestCrawlAllSources:
             log = await s.scalar(select(CrawlLog).where(CrawlLog.data_source_id == source.id))
         assert log.status == CrawlLogStatus.FAILED
         assert "API timeout" in log.message
+
+
+class TestRunInitialCrawl:
+    async def test_failure_records_failed_log(self, db, session_factory):
+        """首次抓取失败时应写入 FAILED 日志，避免信源一直停留在「初始化中」。"""
+        from app.api.data_sources import _run_initial_crawl
+
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id)
+        db.add(source)
+        await db.commit()
+
+        with (
+            patch("app.api.data_sources.AsyncSessionLocal", session_factory),
+            patch(
+                "app.api.data_sources.crawl_source",
+                new=AsyncMock(side_effect=RuntimeError("429 Too Many Requests")),
+            ),
+        ):
+            await _run_initial_crawl(source.id)
+
+        async with session_factory() as s:
+            log = await s.scalar(select(CrawlLog).where(CrawlLog.data_source_id == source.id))
+        assert log is not None
+        assert log.status == CrawlLogStatus.FAILED
+        assert "429" in (log.message or "")
+        assert log.items_found == 0

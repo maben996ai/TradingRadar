@@ -200,15 +200,28 @@ a {
 }
 
 .nav-section-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-3);
-  padding: 8px 8px 6px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-2);
+  padding: 10px 8px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.nav-section-title.nav-section-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.nav-section-title.nav-section-link:hover {
+  color: var(--text-1);
+}
+
+.nav-section-title.nav-section-link.router-link-active {
+  color: var(--accent-strong);
 }
 
 .nav-section-title button {
@@ -225,6 +238,11 @@ a {
 .nav-section-title button:hover {
   background: var(--bg-hover);
   color: var(--text-1);
+}
+
+.nav-section-title .nav-add-btn {
+  padding: 3px;
+  color: var(--text-2);
 }
 
 .nav-item {
@@ -343,11 +361,18 @@ a {
   font-weight: 500;
   transition: all 0.12s;
   margin-bottom: 1px;
+  text-decoration: none;
 }
 
 .nav-child:hover {
   background: var(--bg-hover);
   color: var(--text-1);
+}
+
+.nav-child.router-link-active {
+  background: var(--bg-active);
+  color: var(--accent-strong);
+  font-weight: 600;
 }
 
 .nav-child .nav-item-icon {
@@ -1520,4 +1545,131 @@ a {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* 社交媒体 timeline（folo 风格文本流） */
+.social-timeline {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+}
+
+.social-post {
+  display: flex;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.social-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.social-avatar-placeholder {
+  background: var(--bg-hover);
+}
+
+.social-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.social-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.social-author {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.social-dot,
+.social-time {
+  color: var(--text-3);
+}
+
+.social-text {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.social-text.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.social-more {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.social-more:hover {
+  text-decoration: underline;
+}
+
+.social-media-link {
+  display: block;
+  margin-top: 8px;
+}
+
+.social-media {
+  display: block;
+  margin-top: 8px;
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+.social-source-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  text-decoration: none;
+}
+
+.social-source-link:hover {
+  color: var(--accent-strong);
+}
+
+/* 图片大图预览 lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.82);
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
 }

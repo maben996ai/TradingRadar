@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.database import AsyncSessionLocal, get_db
-from app.models.models import ContentType, DataSource, User
+from app.models.models import ContentType, CrawlLog, CrawlLogStatus, DataSource, User
 from app.schemas.schemas import DataSourceCreate, DataSourceResponse, DataSourceUpdate
 from app.services.resolver import resolve_source
 from app.services.scheduler import crawl_source
@@ -25,6 +25,17 @@ async def _run_initial_crawl(data_source_id: str) -> None:
         await crawl_source(source)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Initial crawl failed for data_source=%s: %s", data_source_id, exc)
+        # 记录失败日志，便于「控制中心」展示初始化失败原因（否则只会一直显示「初始化中」）
+        async with AsyncSessionLocal() as db:
+            db.add(
+                CrawlLog(
+                    data_source_id=data_source_id,
+                    status=CrawlLogStatus.FAILED,
+                    message=str(exc),
+                    items_found=0,
+                )
+            )
+            await db.commit()
 
 
 @router.get("", response_model=list[DataSourceResponse])

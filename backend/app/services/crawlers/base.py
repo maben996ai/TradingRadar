@@ -15,10 +15,10 @@ class SourceInfo:
 
 
 @dataclass
-class CrawledVideo:
-    platform_video_id: str
+class CrawledItem:
+    platform_id: str
     title: str
-    video_url: str
+    content_url: str
     published_at: datetime
     thumbnail_url: str | None = None
     raw_data: dict = field(default_factory=dict)
@@ -32,5 +32,5 @@ class BaseCrawler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def fetch_latest_videos(self, external_id: str, limit: int = 20) -> list[CrawledVideo]:
+    async def fetch_latest_items(self, external_id: str, limit: int = 20) -> list[CrawledItem]:
         raise NotImplementedError

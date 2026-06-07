@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.models.models import CrawlLog, CrawlLogStatus, DataSource, SourceType, Video
+from app.models.models import CrawlLog, CrawlLogStatus, DataSource, SourceType, ContentItem
 from app.services.crawlers.base import SourceInfo
 
 
@@ -373,7 +373,7 @@ class TestDataSourcesAPI:
 
 
 class TestVideosAPI:
-    async def _seed_video(self, db, user_id: str) -> Video:
+    async def _seed_video(self, db, user_id: str) -> ContentItem:
         source = DataSource(
             user_id=user_id,
             source_type=SourceType.BILIBILI,
@@ -383,11 +383,11 @@ class TestVideosAPI:
         )
         db.add(source)
         await db.flush()
-        video = Video(
+        video = ContentItem(
             data_source_id=source.id,
-            platform_video_id="BVtest",
+            platform_id="BVtest",
             title="Test Video",
-            video_url="https://www.bilibili.com/video/BVtest",
+            content_url="https://www.bilibili.com/video/BVtest",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(video)
@@ -399,7 +399,7 @@ class TestVideosAPI:
         user_id = me_resp.json()["id"]
         await self._seed_video(db, user_id)
 
-        resp = await client.get("/api/videos", headers=auth_headers)
+        resp = await client.get("/api/content-items", headers=auth_headers)
         assert resp.status_code == 200
         assert len(resp.json()["items"]) == 1
         assert resp.json()["items"][0]["title"] == "Test Video"
@@ -409,12 +409,12 @@ class TestVideosAPI:
         user_id = me_resp.json()["id"]
         await self._seed_video(db, user_id)
 
-        resp = await client.get("/api/videos?source_type=youtube", headers=auth_headers)
+        resp = await client.get("/api/content-items?source_type=youtube", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["items"] == []
 
     async def test_list_videos_requires_auth(self, client):
-        resp = await client.get("/api/videos")
+        resp = await client.get("/api/content-items")
         assert resp.status_code == 401
 
 
@@ -464,7 +464,7 @@ class TestCrawlLogsAPI:
         )
         db.add(source)
         await db.flush()
-        log = CrawlLog(data_source_id=source.id, status=status, videos_found=1)
+        log = CrawlLog(data_source_id=source.id, status=status, items_found=1)
         db.add(log)
         await db.commit()
         return log

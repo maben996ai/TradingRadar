@@ -1,13 +1,13 @@
 import { apiClient } from "./client";
-import type { Video, VideoListResponse } from "../types";
+import type { ContentItem, ContentItemListResponse } from "../types";
 
-export const videosApi = {
+export const contentApi = {
   list(platform?: "bilibili" | "youtube", cursor?: string | null, limit?: number) {
     const params = {
       ...(platform ? { platform } : {}),
       ...(cursor ? { cursor } : {}),
       ...(limit ? { limit } : {}),
     };
-    return apiClient.get<Video[] | VideoListResponse>("/videos", { params });
+    return apiClient.get<ContentItem[] | ContentItemListResponse>("/content-items", { params });
   },
 };

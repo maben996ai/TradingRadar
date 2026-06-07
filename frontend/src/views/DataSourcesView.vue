@@ -7,16 +7,17 @@
         <h2>{{ t("dataSources.title") }}</h2>
       </div>
       <div class="feed-filters">
-        <button class="filter-btn" :class="{ active: contentType === 'video' }" @click="switchTab('video')">{{ t("dataSources.tabVideos") }}</button>
-        <button class="filter-btn" :class="{ active: contentType === 'article' }" @click="switchTab('article')">{{ t("dataSources.tabArticles") }}</button>
-        <button class="filter-btn" :class="{ active: contentType === 'news' }" @click="switchTab('news')">{{ t("dataSources.tabNews") }}</button>
-        <button class="filter-btn" :class="{ active: contentType === 'market' }" @click="switchTab('market')">{{ t("dataSources.tabMarket") }}</button>
+        <button class="filter-btn" :class="{ active: activeTab === 'finance_news' }" @click="switchTab('finance_news')">{{ t("nav.financeNews") }}</button>
+        <button class="filter-btn" :class="{ active: activeTab === 'twitter' }" @click="switchTab('twitter')">{{ t("nav.socialMedia") }}</button>
+        <button class="filter-btn" :class="{ active: activeTab === 'youtube' }" @click="switchTab('youtube')">{{ t("nav.financeVideo") }}</button>
+        <button class="filter-btn" :class="{ active: activeTab === 'macro_market' }" @click="switchTab('macro_market')">{{ t("nav.macroMarket") }}</button>
+        <button class="filter-btn" :class="{ active: activeTab === 'finance_calendar' }" @click="switchTab('finance_calendar')">{{ t("nav.financeCalendar") }}</button>
       </div>
     </div>
 
-    <!-- 新增表单（news / market 暂不支持 URL 解析，显示提示） -->
+    <!-- 新增表单（金融时讯/市场宏观/财经日历暂不支持 URL 解析，显示提示） -->
     <div class="panel add-form">
-      <template v-if="contentType === 'news' || contentType === 'market'">
+      <template v-if="isPlaceholderTab">
         <p class="muted">{{ t("dataSources.comingSoon") }}</p>
       </template>
       <template v-else>
@@ -37,10 +38,11 @@
       </template>
     </div>
 
-    <!-- 列表 -->
+    <!-- 列表（占位板块由上方表单区提示，不渲染列表） -->
+    <template v-if="!isPlaceholderTab">
     <p v-if="loading" class="muted feed-state">{{ t("dataSources.loading") }}</p>
     <p v-else-if="fetchError" class="error-msg feed-state">{{ t("dataSources.fetchError") }}</p>
-    <p v-else-if="dataSources.length === 0" class="muted feed-state">{{ t("dataSources.empty") }}</p>
+    <p v-else-if="visibleSources.length === 0" class="muted feed-state">{{ t("dataSources.empty") }}</p>
 
     <div v-else class="panel creator-list-panel">
       <div ref="sourceListScrollRef" class="creator-list-scroll">
@@ -56,9 +58,6 @@
                 </a>
                 <span class="platform-badge creator-inline-platform" :class="s.source_type">
                   {{ sourceTypeLabel(s.source_type) }}
-                </span>
-                <span class="content-type-tag">
-                  {{ contentTypeLabel(s.content_type) }}
                 </span>
                 <span v-if="!s.initialized_at" class="creator-init-badge">
                   <span class="creator-init-spinner" aria-hidden="true" />
@@ -86,6 +85,7 @@
         </div>
       </div>
     </div>
+    </template>
 
     <!-- 编辑弹层 -->
     <div v-if="editTarget" class="modal-backdrop" @click.self="editTarget = null">
@@ -128,7 +128,9 @@ import type { ContentType, DataSource, SourceType } from "../types";
 
 const { t } = useI18n();
 
-const contentType = ref<ContentType>("video");
+type SourceTab = "twitter" | "youtube" | "finance_news" | "macro_market" | "finance_calendar";
+const PLACEHOLDER_TABS: SourceTab[] = ["finance_news", "macro_market", "finance_calendar"];
+const activeTab = ref<SourceTab>("twitter");
 const dataSources = ref<DataSource[]>([]);
 const loading = ref(false);
 const fetchError = ref(false);
@@ -146,12 +148,18 @@ const editCategory = ref("");
 const editContentType = ref<ContentType>("video");
 let initPollTimer: number | null = null;
 
-const totalSourcePages = computed(() => Math.max(1, Math.ceil(dataSources.value.length / SOURCE_PAGE_SIZE)));
+const isPlaceholderTab = computed(() => PLACEHOLDER_TABS.includes(activeTab.value));
+const visibleSources = computed(() => {
+  if (activeTab.value === "twitter") return dataSources.value.filter((s) => s.source_type === "twitter");
+  if (activeTab.value === "youtube") return dataSources.value.filter((s) => s.source_type === "youtube");
+  return [];
+});
+const totalSourcePages = computed(() => Math.max(1, Math.ceil(visibleSources.value.length / SOURCE_PAGE_SIZE)));
 const pagedSources = computed(() => {
   const start = (page.value - 1) * SOURCE_PAGE_SIZE;
-  return dataSources.value.slice(start, start + SOURCE_PAGE_SIZE);
+  return visibleSources.value.slice(start, start + SOURCE_PAGE_SIZE);
 });
-const canPaginateSources = computed(() => dataSources.value.length > SOURCE_PAGE_SIZE);
+const canPaginateSources = computed(() => visibleSources.value.length > SOURCE_PAGE_SIZE);
 const sourcePageLabel = computed(() => `${page.value} / ${totalSourcePages.value}`);
 
 function clearInitPollTimer() {
@@ -173,7 +181,7 @@ async function fetchDataSources() {
   loading.value = true;
   fetchError.value = false;
   try {
-    const resp = await dataSourcesApi.list({ content_type: contentType.value });
+    const resp = await dataSourcesApi.list();
     dataSources.value = resp.data;
     if (page.value > totalSourcePages.value) {
       page.value = totalSourcePages.value;
@@ -186,17 +194,19 @@ async function fetchDataSources() {
   }
 }
 
-function switchTab(tab: ContentType) {
-  contentType.value = tab;
+function switchTab(tab: SourceTab) {
+  // 数据已全量加载，切 tab 仅前端按平台过滤 + 重置页码，无需重新请求
+  activeTab.value = tab;
   page.value = 1;
-  fetchDataSources();
 }
 
 async function handleAdd() {
   addError.value = false;
   adding.value = true;
   try {
-    const resp = await dataSourcesApi.create({ url: addUrl.value.trim(), content_type: contentType.value });
+    // X 信源为帖子/短文，YouTube 为视频，按当前平台 tab 映射内容类型
+    const contentTypeForTab: ContentType = activeTab.value === "twitter" ? "article" : "video";
+    const resp = await dataSourcesApi.create({ url: addUrl.value.trim(), content_type: contentTypeForTab });
     dataSources.value.unshift(resp.data);
     page.value = 1;
     addUrl.value = "";
@@ -240,9 +250,6 @@ async function submitEdit() {
   const idx = dataSources.value.findIndex((s) => s.id === editTarget.value!.id);
   if (idx !== -1) dataSources.value[idx] = resp.data;
   editTarget.value = null;
-  if (resp.data.content_type !== contentType.value) {
-    dataSources.value = dataSources.value.filter((s) => s.id !== resp.data.id);
-  }
 }
 
 function sourceTypeLabel(type: SourceType): string {
@@ -254,15 +261,6 @@ function sourceTypeLabel(type: SourceType): string {
     case "website": return t("dataSources.platformWebsite");
     case "rss": return "RSS";
     case "pdf": return "PDF";
-  }
-}
-
-function contentTypeLabel(type: ContentType) {
-  switch (type) {
-    case "video": return t("dataSources.tabVideos");
-    case "article": return t("dataSources.tabArticles");
-    case "news": return t("dataSources.tabNews");
-    case "market": return t("dataSources.tabMarket");
   }
 }
 

@@ -1,24 +1,26 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { videosApi } from "../api/videos";
-import type { Video, VideoListResponse } from "../types";
+import { contentApi } from "../api/content";
+import type { ContentItem, ContentItemListResponse } from "../types";
 
 const API_PAGE_SIZE = 15;
 
-function isVideoListResponse(data: Video[] | VideoListResponse): data is VideoListResponse {
+function isContentItemListResponse(
+  data: ContentItem[] | ContentItemListResponse,
+): data is ContentItemListResponse {
   return !Array.isArray(data) && Array.isArray(data.items);
 }
 
 export const useFeedStore = defineStore("feed", () => {
-  const videos = ref<Video[]>([]);
+  const videos = ref<ContentItem[]>([]);
   const loading = ref(false);
   const loadingMore = ref(false);
   const error = ref<string | null>(null);
   const nextCursor = ref<string | null>(null);
   const hasMore = ref(true);
 
-  function mergeVideos(incoming: Video[]) {
+  function mergeVideos(incoming: ContentItem[]) {
     const byId = new Map(videos.value.map((video) => [video.id, video]));
     for (const video of incoming) {
       byId.set(video.id, video);
@@ -32,8 +34,8 @@ export const useFeedStore = defineStore("feed", () => {
 
     loadingMore.value = true;
     try {
-      const resp = await videosApi.list(undefined, nextCursor.value, API_PAGE_SIZE);
-      const data = isVideoListResponse(resp.data)
+      const resp = await contentApi.list(undefined, nextCursor.value, API_PAGE_SIZE);
+      const data = isContentItemListResponse(resp.data)
         ? resp.data
         : { items: resp.data, next_cursor: null, has_more: false };
       mergeVideos(data.items);

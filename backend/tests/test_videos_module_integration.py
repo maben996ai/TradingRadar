@@ -3,8 +3,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi import HTTPException
 
-from app.api.videos import list_videos
-from app.models.models import DataSource, SourceType, User, Video
+from app.api.content_items import list_content_items
+from app.models.models import DataSource, SourceType, User, ContentItem
 
 
 async def _seed_user(db) -> User:
@@ -35,11 +35,11 @@ async def _seed_videos(db, source: DataSource, count: int) -> None:
     base = datetime(2024, 1, 1, tzinfo=UTC)
     for index in range(count):
         db.add(
-            Video(
+            ContentItem(
                 data_source_id=source.id,
-                platform_video_id=f"BV{index}",
+                platform_id=f"BV{index}",
                 title=f"Video {index}",
-                video_url=f"https://www.bilibili.com/video/BV{index}",
+                content_url=f"https://www.bilibili.com/video/BV{index}",
                 published_at=base + timedelta(hours=index),
             )
         )
@@ -52,10 +52,10 @@ class TestVideosModuleIntegration:
         source = await _seed_data_source(db, user.id)
         await _seed_videos(db, source, 6)
 
-        first_page = await list_videos(
+        first_page = await list_content_items(
             source_type=None, cursor=None, limit=3, current_user=user, db=db
         )
-        second_page = await list_videos(
+        second_page = await list_content_items(
             source_type=None,
             cursor=first_page.next_cursor,
             limit=3,
@@ -75,7 +75,7 @@ class TestVideosModuleIntegration:
         user = await _seed_user(db)
 
         with pytest.raises(HTTPException) as exc_info:
-            await list_videos(source_type=None, cursor="invalid", limit=3, current_user=user, db=db)
+            await list_content_items(source_type=None, cursor="invalid", limit=3, current_user=user, db=db)
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.detail == "Invalid cursor"

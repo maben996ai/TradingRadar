@@ -44,7 +44,7 @@ class FeishuNotifier(BaseNotifier):
         title: str,
         creator_name: str,
         platform: str,
-        video_url: str,
+        content_url: str,
         thumbnail_url: str | None = None,
         published_at: datetime | None = None,
         is_new_creator: bool = False,
@@ -59,7 +59,7 @@ class FeishuNotifier(BaseNotifier):
 
         image_key = await self._resolve_image_key(thumbnail_url)
 
-        title_md = f"**[{title}]({video_url})**"
+        title_md = f"**[{title}]({content_url})**"
         if thumbnail_url and not image_key:
             # 自建应用未配置 or 上传失败时回退为链接
             title_md += f"\n\n🖼 [封面预览]({thumbnail_url})"
@@ -108,7 +108,7 @@ class FeishuNotifier(BaseNotifier):
                             "tag": "button",
                             "text": {"tag": "plain_text", "content": "▶ 观看视频"},
                             "type": "primary",
-                            "url": video_url,
+                            "url": content_url,
                         }
                     ],
                 },

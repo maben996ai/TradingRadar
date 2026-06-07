@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     conn = op.get_bind()
     if conn.dialect.name == "postgresql":
-        conn.execute(sa.text("ALTER TYPE sourcetype ADD VALUE IF NOT EXISTS 'twitter'"))
+        conn.execute(sa.text("ALTER TYPE sourcetype ADD VALUE IF NOT EXISTS 'TWITTER'"))
 
 
 def downgrade() -> None:

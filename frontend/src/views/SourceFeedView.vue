@@ -18,11 +18,46 @@
     <p v-else-if="!sourceVideos.length" class="muted feed-state">{{ t("feed.empty") }}</p>
 
     <template v-else>
-      <div class="video-grid-sm">
+      <!-- 社交媒体：folo 风格 timeline 文本流 -->
+      <div v-if="isSocial" class="social-timeline">
+        <article v-for="post in pagedVideos" :key="post.id" class="social-post">
+          <img v-if="sourceAvatar" :src="sourceAvatar" class="social-avatar" :alt="sourceName" referrerpolicy="no-referrer" />
+          <div v-else class="social-avatar social-avatar-placeholder" />
+          <div class="social-body">
+            <div class="social-head">
+              <span class="social-author">{{ sourceName }}</span>
+              <span class="social-dot">·</span>
+              <span class="social-time">{{ formatPublishedAt(post.published_at) }}</span>
+            </div>
+            <p class="social-text" :class="{ collapsed: isCollapsed(post) }">{{ post.content_text }}</p>
+            <button
+              v-if="canCollapse(post)"
+              type="button"
+              class="social-more"
+              @click="toggleExpand(post.id)"
+            >
+              {{ expandedPosts.has(post.id) ? t("feed.showLess") : t("feed.showMore") }}
+            </button>
+            <img
+              v-if="post.thumbnail_url"
+              :src="post.thumbnail_url"
+              class="social-media"
+              :alt="post.content_text"
+              loading="lazy"
+              referrerpolicy="no-referrer"
+              @click="lightboxUrl = post.thumbnail_url"
+            />
+            <a :href="post.content_url" target="_blank" rel="noopener noreferrer" class="social-source-link">{{ t("feed.viewOriginal") }}</a>
+          </div>
+        </article>
+      </div>
+
+      <!-- 财经视频等：网格卡片 -->
+      <div v-else class="video-grid-sm">
         <a
           v-for="video in pagedVideos"
           :key="video.id"
-          :href="video.video_url"
+          :href="video.content_url"
           target="_blank"
           rel="noopener noreferrer"
           class="video-card-sm"
@@ -48,15 +83,21 @@
         <button class="filter-btn" :disabled="page === totalPages" @click="page++">{{ t("feed.nextPage") }}</button>
       </div>
     </template>
+
+    <!-- 图片大图预览 -->
+    <div v-if="lightboxUrl" class="lightbox" @click="lightboxUrl = null">
+      <img :src="lightboxUrl" class="lightbox-img" alt="" referrerpolicy="no-referrer" />
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import { useI18n } from "../i18n";
 import { useFeedStore } from "../stores/feed";
+import type { ContentItem } from "../types";
 import { formatPublishedAt } from "../utils/datetime";
 import { formatDuration } from "../utils/duration";
 
@@ -66,6 +107,7 @@ const feedStore = useFeedStore();
 
 const PAGE_SIZE = 15;
 const page = ref(1);
+const lightboxUrl = ref<string | null>(null);
 
 const sourceId = computed(() => route.params.sourceId as string);
 
@@ -78,6 +120,21 @@ const sourceVideos = computed(() =>
 const sourceName = computed(() => sourceVideos.value[0]?.data_source_name ?? "");
 const sourceAvatar = computed(() => sourceVideos.value[0]?.data_source_avatar_url ?? null);
 const sourceType = computed(() => sourceVideos.value[0]?.source_type ?? "");
+const isSocial = computed(() => sourceType.value === "twitter");
+
+// 过长推文默认折叠，点击「显示更多」展开
+const COLLAPSE_THRESHOLD = 140;
+const expandedPosts = reactive(new Set<string>());
+function canCollapse(item: ContentItem): boolean {
+  return (item.content_text?.length ?? 0) > COLLAPSE_THRESHOLD;
+}
+function isCollapsed(item: ContentItem): boolean {
+  return canCollapse(item) && !expandedPosts.has(item.id);
+}
+function toggleExpand(id: string): void {
+  if (expandedPosts.has(id)) expandedPosts.delete(id);
+  else expandedPosts.add(id);
+}
 
 const totalPages = computed(() => Math.max(1, Math.ceil(sourceVideos.value.length / PAGE_SIZE)));
 const pagedVideos = computed(() => {

@@ -13,24 +13,31 @@ const messages = {
       switchToEnglish: "Switch to English",
     },
     nav: {
-      feed: "动态资讯",
       dataSources: "信源管理",
       controlCenter: "控制中心",
       contentAnalysis: "投研分析",
       signOut: "退出登录",
       searchPlaceholder: "搜索信源、关键词…",
-      sectionViews: "视图",
-      allFeed: "所有信息流",
-      unread: "未读",
-      starred: "已收藏",
-      readLater: "稍后阅读",
       sectionSources: "信源",
       sectionAnalysis: "分析",
-      personalSources: "个人信源",
+      socialMedia: "社交媒体",
+      financeVideo: "财经视频",
       financeNews: "金融时讯",
       macroMarket: "市场宏观",
-      financeCalendar: "金融日历",
-      macroIndicators: "宏观指标",
+      financeCalendar: "财经日历",
+      srcJin10: "金十数据",
+      srcYahoo: "雅虎财经",
+      srcBloomberg: "彭博",
+      srcReuters: "路透社",
+      macroRates: "利率与政策",
+      macroInflation: "通胀",
+      macroGrowth: "经济增长",
+      macroEmployment: "就业",
+      macroLiquidity: "流动性",
+      macroRisk: "风险偏好",
+      calCentralBank: "央行政策",
+      calIndustry: "行业事件",
+      calEarnings: "公司财报",
       stockAnalysis: "个股分析",
       marketAnalysis: "市场分析",
       memberOnline: "Pro 会员 · 在线",
@@ -50,6 +57,9 @@ const messages = {
       tabNews: "资讯",
       tabMarket: "市场",
       viewAll: "查看全部",
+      showMore: "显示更多",
+      showLess: "收起",
+      viewOriginal: "查看原文",
       comingSoon: "即将上线，敬请期待",
       backToFeed: "← 返回动态",
       itemsUnit: "条",
@@ -64,7 +74,7 @@ const messages = {
     dataSources: {
       eyebrow: "信源",
       title: "信源管理",
-      addPlaceholder: "粘贴 Bilibili 或 YouTube 主页链接",
+      addPlaceholder: "粘贴 X 或 YouTube 作者主页链接",
       addButton: "添加",
       adding: "添加中…",
       empty: "还没有订阅的信源，粘贴主页链接开始添加。",
@@ -136,18 +146,26 @@ const messages = {
       contentAnalysis: "Research Analysis",
       signOut: "Sign out",
       searchPlaceholder: "Search sources, keywords…",
-      sectionViews: "Views",
-      allFeed: "All Feed",
-      unread: "Unread",
-      starred: "Starred",
-      readLater: "Read Later",
       sectionSources: "Sources",
       sectionAnalysis: "Analysis",
-      personalSources: "Personal Sources",
+      socialMedia: "Social Media",
+      financeVideo: "Finance Video",
       financeNews: "Finance News",
       macroMarket: "Market Macro",
       financeCalendar: "Finance Calendar",
-      macroIndicators: "Macro Indicators",
+      srcJin10: "Jin10",
+      srcYahoo: "Yahoo Finance",
+      srcBloomberg: "Bloomberg",
+      srcReuters: "Reuters",
+      macroRates: "Rates & Policy",
+      macroInflation: "Inflation",
+      macroGrowth: "Growth",
+      macroEmployment: "Employment",
+      macroLiquidity: "Liquidity",
+      macroRisk: "Risk Appetite",
+      calCentralBank: "Central Bank",
+      calIndustry: "Industry Events",
+      calEarnings: "Earnings",
       stockAnalysis: "Stock Analysis",
       marketAnalysis: "Market Analysis",
       memberOnline: "Pro · Online",
@@ -167,6 +185,9 @@ const messages = {
       tabNews: "News",
       tabMarket: "Market",
       viewAll: "View all",
+      showMore: "Show more",
+      showLess: "Show less",
+      viewOriginal: "View original",
       comingSoon: "Coming soon",
       backToFeed: "← Back to Feed",
       itemsUnit: "items",
@@ -181,7 +202,7 @@ const messages = {
     dataSources: {
       eyebrow: "Sources",
       title: "Source Management",
-      addPlaceholder: "Paste a Bilibili or YouTube channel URL",
+      addPlaceholder: "Paste an X or YouTube profile URL",
       addButton: "Add",
       adding: "Adding…",
       empty: "No sources yet. Paste a channel URL to get started.",
@@ -247,24 +268,31 @@ type MessageKey =
   | "app.localeLabel"
   | "app.switchToChinese"
   | "app.switchToEnglish"
-  | "nav.feed"
   | "nav.dataSources"
   | "nav.controlCenter"
   | "nav.contentAnalysis"
   | "nav.signOut"
   | "nav.searchPlaceholder"
-  | "nav.sectionViews"
-  | "nav.allFeed"
-  | "nav.unread"
-  | "nav.starred"
-  | "nav.readLater"
   | "nav.sectionSources"
   | "nav.sectionAnalysis"
-  | "nav.personalSources"
+  | "nav.socialMedia"
+  | "nav.financeVideo"
   | "nav.financeNews"
   | "nav.macroMarket"
   | "nav.financeCalendar"
-  | "nav.macroIndicators"
+  | "nav.srcJin10"
+  | "nav.srcYahoo"
+  | "nav.srcBloomberg"
+  | "nav.srcReuters"
+  | "nav.macroRates"
+  | "nav.macroInflation"
+  | "nav.macroGrowth"
+  | "nav.macroEmployment"
+  | "nav.macroLiquidity"
+  | "nav.macroRisk"
+  | "nav.calCentralBank"
+  | "nav.calIndustry"
+  | "nav.calEarnings"
   | "nav.stockAnalysis"
   | "nav.marketAnalysis"
   | "nav.memberOnline"
@@ -282,6 +310,9 @@ type MessageKey =
   | "feed.tabNews"
   | "feed.tabMarket"
   | "feed.viewAll"
+  | "feed.showMore"
+  | "feed.showLess"
+  | "feed.viewOriginal"
   | "feed.comingSoon"
   | "feed.backToFeed"
   | "feed.itemsUnit"

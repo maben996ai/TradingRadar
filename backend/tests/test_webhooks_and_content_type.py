@@ -307,7 +307,7 @@ class TestFeishuNotifier:
                 title="测试视频标题",
                 creator_name="测试创作者",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
             )
 
         mock_client.post.assert_awaited_once()
@@ -324,7 +324,7 @@ class TestFeishuNotifier:
                 title="title",
                 creator_name="creator",
                 platform="bilibili",
-                video_url="https://www.bilibili.com",
+                content_url="https://www.bilibili.com",
             )
             mock_client_cls.assert_not_called()
 
@@ -349,7 +349,7 @@ class TestFeishuNotifier:
                 title="首条视频",
                 creator_name="新创作者",
                 platform="youtube",
-                video_url="https://youtube.com/watch?v=abc",
+                content_url="https://youtube.com/watch?v=abc",
                 is_new_creator=True,
             )
 
@@ -373,7 +373,7 @@ class TestFeishuNotifier:
                 title="新视频",
                 creator_name="老创作者",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 is_new_creator=False,
             )
 
@@ -392,19 +392,19 @@ class TestFeishuNotifier:
             )
             mock_client_cls.return_value = mock_client
 
-            video_url = "https://www.bilibili.com/video/BV123"
+            content_url = "https://www.bilibili.com/video/BV123"
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url=video_url,
+                content_url=content_url,
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])
         title_element = next((e for e in elements if e.get("tag") == "div" and "text" in e), None)
         assert title_element is not None
-        assert video_url in title_element["text"]["content"]
+        assert content_url in title_element["text"]["content"]
 
     async def test_send_card_without_app_falls_back_to_text_link(self):
         """未配置自建应用时，封面以文本链接形式嵌入。"""
@@ -425,7 +425,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 thumbnail_url="https://i0.hdslb.com/cover.jpg",
             )
 
@@ -463,7 +463,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 thumbnail_url="https://i0.hdslb.com/cover.jpg",
             )
 
@@ -494,7 +494,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
             )
 
         card = sent_payload.get("card", {})
@@ -519,7 +519,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 published_at=datetime(2026, 4, 19, 15, 30, 42, tzinfo=UTC),
             )
 
@@ -553,7 +553,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 published_at=datetime(2024, 1, 1, 10, 0, 0, tzinfo=UTC),
             )
 
@@ -586,7 +586,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])
@@ -626,7 +626,7 @@ class TestFeishuNotifier:
                 title="港股分析",
                 creator_name="财经UP",
                 platform="bilibili",
-                video_url="https://www.bilibili.com/video/BV1",
+                content_url="https://www.bilibili.com/video/BV1",
                 thumbnail_url="https://i0.hdslb.com/cover.jpg",
             )
 

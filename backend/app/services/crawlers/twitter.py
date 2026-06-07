@@ -7,7 +7,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.models.models import SourceType
-from app.services.crawlers.base import BaseCrawler, CrawledVideo, SourceInfo
+from app.services.crawlers.base import BaseCrawler, CrawledItem, SourceInfo
 
 settings = get_settings()
 
@@ -45,7 +45,7 @@ class TwitterCrawler(BaseCrawler):
             raw_data=user,
         )
 
-    async def fetch_latest_videos(self, external_id: str, limit: int = 20) -> list[CrawledVideo]:
+    async def fetch_latest_items(self, external_id: str, limit: int = 20) -> list[CrawledItem]:
         if not settings.twitterapi_io_api_key:
             return []
 
@@ -57,20 +57,21 @@ class TwitterCrawler(BaseCrawler):
             },
         )
         if payload.get("status") == "error":
-            raise ValueError(payload.get("message") or "Failed to fetch X/Twitter posts")
+            raise ValueError(payload.get("msg") or "Failed to fetch X/Twitter posts")
 
-        results: list[CrawledVideo] = []
-        for tweet in (payload.get("tweets") or [])[:limit]:
+        data = payload.get("data") or {}
+        results: list[CrawledItem] = []
+        for tweet in (data.get("tweets") or [])[:limit]:
             tweet_id = tweet.get("id")
             if not tweet_id:
                 continue
 
             text = (tweet.get("text") or "").strip()
             results.append(
-                CrawledVideo(
-                    platform_video_id=tweet_id,
+                CrawledItem(
+                    platform_id=tweet_id,
                     title=text[:500] or tweet_id,
-                    video_url=tweet.get("url") or self._tweet_url(tweet),
+                    content_url=tweet.get("url") or self._tweet_url(tweet),
                     thumbnail_url=self._extract_thumbnail_url(tweet),
                     published_at=self._parse_datetime(tweet.get("createdAt")),
                     raw_data=tweet,

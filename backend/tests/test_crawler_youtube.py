@@ -118,12 +118,12 @@ class TestYouTubeFetchLatestVideos:
 
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = "fake-key"
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert len(videos) == 2
-        assert videos[0].platform_video_id == "vid001"
+        assert videos[0].platform_id == "vid001"
         assert videos[0].title == "Video One"
-        assert videos[0].video_url == "https://www.youtube.com/watch?v=vid001"
+        assert videos[0].content_url == "https://www.youtube.com/watch?v=vid001"
         assert videos[0].thumbnail_url == "https://example.com/thumb1.jpg"
 
     @respx.mock
@@ -137,7 +137,7 @@ class TestYouTubeFetchLatestVideos:
 
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = "fake-key"
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert videos[0].published_at.year == 2024
         assert videos[0].published_at.month == 1
@@ -153,7 +153,7 @@ class TestYouTubeFetchLatestVideos:
 
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = "fake-key"
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert videos[0].raw_data["contentDetails"]["duration"] == "PT8M20S"
         assert videos[1].raw_data["contentDetails"]["duration"] == "PT1H8M20S"
@@ -169,7 +169,7 @@ class TestYouTubeFetchLatestVideos:
 
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = "fake-key"
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert len(videos) == 2
         assert "contentDetails" not in videos[0].raw_data
@@ -177,7 +177,7 @@ class TestYouTubeFetchLatestVideos:
     async def test_no_api_key_returns_empty_list(self):
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = ""
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert videos == []
 
@@ -191,6 +191,6 @@ class TestYouTubeFetchLatestVideos:
 
         with patch("app.services.crawlers.youtube.settings") as mock_settings:
             mock_settings.youtube_api_key = "fake-key"
-            videos = await crawler.fetch_latest_videos("UCxxxxxx")
+            videos = await crawler.fetch_latest_items("UCxxxxxx")
 
         assert videos == []

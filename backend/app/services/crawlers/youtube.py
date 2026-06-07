@@ -6,7 +6,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.models.models import SourceType
-from app.services.crawlers.base import BaseCrawler, CrawledVideo, SourceInfo
+from app.services.crawlers.base import BaseCrawler, CrawledItem, SourceInfo
 
 settings = get_settings()
 
@@ -47,7 +47,7 @@ class YouTubeCrawler(BaseCrawler):
             raw_data=items[0],
         )
 
-    async def fetch_latest_videos(self, external_id: str, limit: int = 20) -> list[CrawledVideo]:
+    async def fetch_latest_items(self, external_id: str, limit: int = 20) -> list[CrawledItem]:
         if not settings.youtube_api_key:
             return []
 
@@ -89,7 +89,7 @@ class YouTubeCrawler(BaseCrawler):
                     if item.get("id")
                 }
 
-        results: list[CrawledVideo] = []
+        results: list[CrawledItem] = []
         for item in payload.get("items") or []:
             snippet = item.get("snippet") or {}
             video_id = (snippet.get("resourceId") or {}).get("videoId")
@@ -101,10 +101,10 @@ class YouTubeCrawler(BaseCrawler):
             if details and details.get("contentDetails"):
                 merged_raw_data["contentDetails"] = details["contentDetails"]
             results.append(
-                CrawledVideo(
-                    platform_video_id=video_id,
+                CrawledItem(
+                    platform_id=video_id,
                     title=snippet.get("title") or video_id,
-                    video_url=f"https://www.youtube.com/watch?v={video_id}",
+                    content_url=f"https://www.youtube.com/watch?v={video_id}",
                     thumbnail_url=((snippet.get("thumbnails") or {}).get("high") or {}).get("url"),
                     published_at=datetime.fromisoformat((published_at or "").replace("Z", "+00:00"))
                     if published_at

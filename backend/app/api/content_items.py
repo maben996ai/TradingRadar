@@ -11,8 +11,8 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models.models import SourceType, User, Video
-from app.schemas.schemas import VideoListResponse, VideoResponse
+from app.models.models import ContentItem, SourceType, User
+from app.schemas.schemas import ContentItemListResponse, ContentItemResponse
 
 router = APIRouter()
 
@@ -70,8 +70,18 @@ def _extract_duration_seconds(raw_data: dict | None) -> int | None:
     return None
 
 
-def _encode_cursor(published_at: str, video_id: str) -> str:
-    payload = json.dumps({"published_at": published_at, "id": video_id})
+def _extract_full_text(raw_data: dict | None) -> str | None:
+    """提取完整正文（如推文原文），优先于截断的 title。"""
+    if not raw_data:
+        return None
+    text = raw_data.get("text")
+    if isinstance(text, str) and text.strip():
+        return text.strip()
+    return None
+
+
+def _encode_cursor(published_at: str, item_id: str) -> str:
+    payload = json.dumps({"published_at": published_at, "id": item_id})
     return base64.urlsafe_b64encode(payload.encode()).decode()
 
 
@@ -80,24 +90,24 @@ def _decode_cursor(cursor: str) -> tuple[str, str]:
     return payload["published_at"], payload["id"]
 
 
-@router.get("", response_model=VideoListResponse)
-async def list_videos(
+@router.get("", response_model=ContentItemListResponse)
+async def list_content_items(
     source_type: SourceType | None = Query(default=None),
     cursor: str | None = Query(default=None),
     limit: int = Query(default=DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> VideoListResponse:
+) -> ContentItemListResponse:
     stmt = (
-        select(Video)
-        .options(selectinload(Video.data_source))
-        .join(Video.data_source)
-        .where(Video.data_source.has(user_id=current_user.id))
-        .order_by(Video.published_at.desc(), Video.id.desc())
+        select(ContentItem)
+        .options(selectinload(ContentItem.data_source))
+        .join(ContentItem.data_source)
+        .where(ContentItem.data_source.has(user_id=current_user.id))
+        .order_by(ContentItem.published_at.desc(), ContentItem.id.desc())
         .limit(limit + 1)
     )
     if source_type is not None:
-        stmt = stmt.where(Video.data_source.has(source_type=source_type))
+        stmt = stmt.where(ContentItem.data_source.has(source_type=source_type))
     if cursor is not None:
         try:
             cursor_published_at, cursor_id = _decode_cursor(cursor)
@@ -106,16 +116,16 @@ async def list_videos(
             raise HTTPException(status_code=400, detail="Invalid cursor") from exc
         stmt = stmt.where(
             or_(
-                Video.published_at < cursor_dt,
-                and_(Video.published_at == cursor_dt, Video.id < cursor_id),
+                ContentItem.published_at < cursor_dt,
+                and_(ContentItem.published_at == cursor_dt, ContentItem.id < cursor_id),
             )
         )
 
     result = await db.scalars(stmt)
-    videos = list(result)
+    rows = list(result)
 
-    has_more = len(videos) > limit
-    page = videos[:limit]
+    has_more = len(rows) > limit
+    page = rows[:limit]
 
     next_cursor = None
     if has_more and page:
@@ -123,13 +133,14 @@ async def list_videos(
         next_cursor = _encode_cursor(last.published_at.isoformat(), last.id)
 
     items = [
-        VideoResponse(
+        ContentItemResponse(
             id=v.id,
             data_source_id=v.data_source_id,
-            platform_video_id=v.platform_video_id,
+            platform_id=v.platform_id,
             title=v.title,
+            content_text=_extract_full_text(v.raw_data) or v.title,
             thumbnail_url=v.thumbnail_url,
-            video_url=v.video_url,
+            content_url=v.content_url,
             published_at=v.published_at,
             duration_seconds=_extract_duration_seconds(v.raw_data),
             data_source_name=v.data_source.name,
@@ -139,4 +150,4 @@ async def list_videos(
         for v in page
     ]
 
-    return VideoListResponse(items=items, next_cursor=next_cursor, has_more=has_more)
+    return ContentItemListResponse(items=items, next_cursor=next_cursor, has_more=has_more)

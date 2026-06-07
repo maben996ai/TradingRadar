@@ -5,8 +5,8 @@ import { useAuthStore } from "../stores/auth";
 import ContentAnalysisView from "../views/ContentAnalysisView.vue";
 import ControlCenterView from "../views/ControlCenterView.vue";
 import DataSourcesView from "../views/DataSourcesView.vue";
-import FeedView from "../views/FeedView.vue";
 import LoginView from "../views/LoginView.vue";
+import PlatformFeedView from "../views/PlatformFeedView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import SourceFeedView from "../views/SourceFeedView.vue";
 
@@ -19,7 +19,8 @@ export const router = createRouter({
       path: "/",
       component: AppShell,
       children: [
-        { path: "", name: "feed", component: FeedView },
+        { path: "", redirect: "/feed/twitter" },
+        { path: "feed/:platform", name: "platform-feed", component: PlatformFeedView },
         { path: "source/:sourceId", name: "source-feed", component: SourceFeedView },
         { path: "sources", name: "data-sources", component: DataSourcesView },
         { path: "creators", redirect: "/sources" },
@@ -43,6 +44,6 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.public && authStore.isAuthenticated) {
-    return { name: "feed" };
+    return { path: "/feed/twitter" };
   }
 });
