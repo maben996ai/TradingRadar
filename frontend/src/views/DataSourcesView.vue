@@ -249,6 +249,7 @@ function sourceTypeLabel(type: SourceType): string {
   switch (type) {
     case "bilibili": return t("dataSources.platformBilibili");
     case "youtube": return t("dataSources.platformYoutube");
+    case "twitter": return t("dataSources.platformTwitter");
     case "wechat_article": return t("dataSources.platformWechat");
     case "website": return t("dataSources.platformWebsite");
     case "rss": return "RSS";

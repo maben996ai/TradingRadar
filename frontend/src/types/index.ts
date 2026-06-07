@@ -1,6 +1,13 @@
 export type ContentType = "video" | "article" | "news" | "market";
 
-export type SourceType = "bilibili" | "youtube" | "wechat_article" | "website" | "rss" | "pdf";
+export type SourceType =
+  | "bilibili"
+  | "youtube"
+  | "twitter"
+  | "wechat_article"
+  | "website"
+  | "rss"
+  | "pdf";
 
 export interface DataSource {
   id: string;

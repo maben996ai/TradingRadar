@@ -9,6 +9,9 @@ SOURCE_PATTERNS: dict[SourceType, tuple[str, ...]] = {
         r"https?://(?:www\.)?youtube\.com/channel/[\w-]+",
         r"https?://(?:www\.)?youtube\.com/@[\w.-]+",
     ),
+    SourceType.TWITTER: (
+        r"https?://(?:www\.)?(?:twitter\.com|x\.com)/[A-Za-z0-9_]+/?(?:\?.*)?$",
+    ),
 }
 
 
