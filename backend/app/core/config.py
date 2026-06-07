@@ -9,7 +9,7 @@ DEFAULT_SQLITE_PATH = ROOT_DIR / "backend" / "data" / "trendradar.db"
 
 
 class Settings(BaseSettings):
-    app_name: str = "TrendRadar"
+    app_name: str = "TradingRader"
     api_prefix: str = "/api"
     database_url: str = f"sqlite+aiosqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
     redis_url: str = "redis://localhost:6379/0"

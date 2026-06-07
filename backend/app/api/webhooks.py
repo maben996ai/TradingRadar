@@ -82,7 +82,7 @@ async def test_feishu_webhook(
     row = await _get_webhook_or_404(db, webhook_id, current_user.id)
     await _notifier.send_card(
         webhook_url=row.webhook_url,
-        title="TrendRadar 通知测试 - 飞书推送已就绪",
+        title="TradingRader 通知测试 - 飞书推送已就绪",
         creator_name="测试创作者",
         platform="bilibili",
         video_url="https://www.bilibili.com",

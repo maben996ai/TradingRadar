@@ -16,8 +16,24 @@ const messages = {
       feed: "动态资讯",
       dataSources: "信源管理",
       controlCenter: "控制中心",
-      contentAnalysis: "内容分析",
+      contentAnalysis: "投研分析",
       signOut: "退出登录",
+      searchPlaceholder: "搜索信源、关键词…",
+      sectionViews: "视图",
+      allFeed: "所有信息流",
+      unread: "未读",
+      starred: "已收藏",
+      readLater: "稍后阅读",
+      sectionSources: "信源",
+      sectionAnalysis: "分析",
+      personalSources: "个人信源",
+      financeNews: "金融时讯",
+      macroMarket: "市场宏观",
+      financeCalendar: "金融日历",
+      macroIndicators: "宏观指标",
+      stockAnalysis: "个股分析",
+      marketAnalysis: "市场分析",
+      memberOnline: "Pro 会员 · 在线",
     },
     feed: {
       eyebrow: "内容动态",
@@ -36,6 +52,14 @@ const messages = {
       viewAll: "查看全部",
       comingSoon: "即将上线，敬请期待",
       backToFeed: "← 返回动态",
+      itemsUnit: "条",
+      refresh: "刷新",
+      today: "今天",
+      yesterday: "昨天",
+      statTotal: "条内容",
+      statSources: "个信源",
+      placeholderHint: "该板块即将接入真实数据，当前为示例内容。",
+      placeholderSummary: "后端数据源接入后，这里将展示来自金融时讯、宏观市场等渠道的实时内容。",
     },
     dataSources: {
       eyebrow: "信源",
@@ -70,13 +94,13 @@ const messages = {
       platformWebsite: "网站",
     },
     contentAnalysis: {
-      eyebrow: "内容分析",
-      title: "内容分析",
+      eyebrow: "投研分析",
+      title: "投研分析",
       description: "基于大模型的视频内容分析与投研洞察，即将上线。",
     },
     auth: {
       loginEyebrow: "欢迎回来",
-      loginTitle: "登录 TrendRadar",
+      loginTitle: "登录 TradingRader",
       registerEyebrow: "新建工作区",
       registerTitle: "创建你的账号",
       email: "邮箱",
@@ -108,8 +132,24 @@ const messages = {
       feed: "Latest Updates",
       dataSources: "Sources",
       controlCenter: "Control Center",
-      contentAnalysis: "Content Analysis",
+      contentAnalysis: "Research Analysis",
       signOut: "Sign out",
+      searchPlaceholder: "Search sources, keywords…",
+      sectionViews: "Views",
+      allFeed: "All Feed",
+      unread: "Unread",
+      starred: "Starred",
+      readLater: "Read Later",
+      sectionSources: "Sources",
+      sectionAnalysis: "Analysis",
+      personalSources: "Personal Sources",
+      financeNews: "Finance News",
+      macroMarket: "Market Macro",
+      financeCalendar: "Finance Calendar",
+      macroIndicators: "Macro Indicators",
+      stockAnalysis: "Stock Analysis",
+      marketAnalysis: "Market Analysis",
+      memberOnline: "Pro · Online",
     },
     feed: {
       eyebrow: "Feed",
@@ -128,6 +168,14 @@ const messages = {
       viewAll: "View all",
       comingSoon: "Coming soon",
       backToFeed: "← Back to Feed",
+      itemsUnit: "items",
+      refresh: "Refresh",
+      today: "Today",
+      yesterday: "Yesterday",
+      statTotal: "items",
+      statSources: "sources",
+      placeholderHint: "This section will connect to live data soon — showing sample content for now.",
+      placeholderSummary: "Once data sources are connected, real-time content from finance news and macro market channels will appear here.",
     },
     dataSources: {
       eyebrow: "Sources",
@@ -162,13 +210,13 @@ const messages = {
       platformWebsite: "Website",
     },
     contentAnalysis: {
-      eyebrow: "Content Analysis",
-      title: "Content Analysis",
+      eyebrow: "Research Analysis",
+      title: "Research Analysis",
       description: "AI-powered content analysis and investment insights — coming soon.",
     },
     auth: {
       loginEyebrow: "Welcome back",
-      loginTitle: "Sign in to TrendRadar",
+      loginTitle: "Sign in to TradingRader",
       registerEyebrow: "New workspace",
       registerTitle: "Create your account",
       email: "Email",
@@ -202,6 +250,22 @@ type MessageKey =
   | "nav.controlCenter"
   | "nav.contentAnalysis"
   | "nav.signOut"
+  | "nav.searchPlaceholder"
+  | "nav.sectionViews"
+  | "nav.allFeed"
+  | "nav.unread"
+  | "nav.starred"
+  | "nav.readLater"
+  | "nav.sectionSources"
+  | "nav.sectionAnalysis"
+  | "nav.personalSources"
+  | "nav.financeNews"
+  | "nav.macroMarket"
+  | "nav.financeCalendar"
+  | "nav.macroIndicators"
+  | "nav.stockAnalysis"
+  | "nav.marketAnalysis"
+  | "nav.memberOnline"
   | "feed.eyebrow"
   | "feed.title"
   | "feed.sortByTime"
@@ -218,6 +282,14 @@ type MessageKey =
   | "feed.viewAll"
   | "feed.comingSoon"
   | "feed.backToFeed"
+  | "feed.itemsUnit"
+  | "feed.refresh"
+  | "feed.today"
+  | "feed.yesterday"
+  | "feed.statTotal"
+  | "feed.statSources"
+  | "feed.placeholderHint"
+  | "feed.placeholderSummary"
   | "dataSources.eyebrow"
   | "dataSources.title"
   | "dataSources.addPlaceholder"
