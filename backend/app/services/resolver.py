@@ -5,11 +5,6 @@ from app.services.crawlers.base import SourceInfo
 from app.services.crawlers.registry import crawler_registry
 
 SOURCE_PATTERNS: dict[SourceType, tuple[str, ...]] = {
-    SourceType.BILIBILI: (
-        r"https?://space\.bilibili\.com/\d+",
-        r"https?://(?:www\.)?bilibili\.com/video/BV[\w]+",
-        r"https?://b23\.tv/[\w]+",
-    ),
     SourceType.YOUTUBE: (
         r"https?://(?:www\.)?youtube\.com/channel/[\w-]+",
         r"https?://(?:www\.)?youtube\.com/@[\w.-]+",
