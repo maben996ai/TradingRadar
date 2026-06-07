@@ -22,13 +22,13 @@ def make_user() -> User:
     return User(email="test@example.com", password_hash="x", display_name="Tester")
 
 
-def make_source(user_id: str, source_type: SourceType = SourceType.BILIBILI) -> DataSource:
+def make_source(user_id: str, source_type: SourceType = SourceType.YOUTUBE) -> DataSource:
     return DataSource(
         user_id=user_id,
         source_type=source_type,
         external_id="123456",
         name="Test Source",
-        profile_url="https://space.bilibili.com/123456",
+        profile_url="https://www.youtube.com/@testchannel",
     )
 
 

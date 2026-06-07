@@ -6,13 +6,6 @@ from app.models.models import SourceType
 from app.services.crawlers.base import SourceInfo
 from app.services.resolver import resolve_source
 
-MOCK_BILIBILI_SOURCE = SourceInfo(
-    platform_id="123456",
-    name="测试UP主",
-    profile_url="https://space.bilibili.com/123456",
-    avatar_url=None,
-)
-
 MOCK_YOUTUBE_SOURCE = SourceInfo(
     platform_id="UCxxxx",
     name="Test Channel",
@@ -28,24 +21,6 @@ def make_mock_crawler(source_info: SourceInfo) -> AsyncMock:
 
 
 class TestResolverPatternMatching:
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "https://space.bilibili.com/123456",
-            "https://space.bilibili.com/99999999",
-            "https://b23.tv/abc123",
-            "https://space.bilibili.com/508452265/upload/video",
-            "https://space.bilibili.com/508452265/video",
-        ],
-    )
-    async def test_bilibili_urls_resolve_to_bilibili_source_type(self, url):
-        with patch(
-            "app.services.resolver.crawler_registry.get",
-            return_value=make_mock_crawler(MOCK_BILIBILI_SOURCE),
-        ):
-            source_type, _ = await resolve_source(url)
-        assert source_type == SourceType.BILIBILI
-
     @pytest.mark.parametrize(
         "url",
         [
@@ -70,16 +45,16 @@ class TestResolverPatternMatching:
     async def test_url_with_leading_spaces_is_normalized(self):
         with patch(
             "app.services.resolver.crawler_registry.get",
-            return_value=make_mock_crawler(MOCK_BILIBILI_SOURCE),
+            return_value=make_mock_crawler(MOCK_YOUTUBE_SOURCE),
         ):
-            source_type, _ = await resolve_source("  https://space.bilibili.com/123456  ")
-        assert source_type == SourceType.BILIBILI
+            source_type, _ = await resolve_source("  https://www.youtube.com/@testchannel  ")
+        assert source_type == SourceType.YOUTUBE
 
     async def test_returns_source_info_from_crawler(self):
         with patch(
             "app.services.resolver.crawler_registry.get",
-            return_value=make_mock_crawler(MOCK_BILIBILI_SOURCE),
+            return_value=make_mock_crawler(MOCK_YOUTUBE_SOURCE),
         ):
-            _, source = await resolve_source("https://space.bilibili.com/123456")
-        assert source.platform_id == "123456"
-        assert source.name == "测试UP主"
+            _, source = await resolve_source("https://www.youtube.com/@testchannel")
+        assert source.platform_id == "UCxxxx"
+        assert source.name == "Test Channel"

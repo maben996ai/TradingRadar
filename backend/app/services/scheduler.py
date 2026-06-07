@@ -24,7 +24,13 @@ class SchedulerService:
         if self._started:
             return
         self.scheduler.add_job(
-            crawl_all_sources, "interval", minutes=30, id="crawl_all_sources", replace_existing=True
+            crawl_all_sources,
+            "interval",
+            minutes=30,
+            id="crawl_all_sources",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=300,
         )
         self.scheduler.start()
         self._started = True
@@ -181,7 +187,11 @@ async def crawl_source(source: DataSource) -> int:
 
 async def crawl_all_sources() -> None:
     async with AsyncSessionLocal() as db:
-        sources = list(await db.scalars(select(DataSource)))
+        sources = list(await db.scalars(
+            select(DataSource).where(
+                DataSource.source_type.in_(crawler_registry.supported_types())
+            )
+        ))
 
     results = await asyncio.gather(*[crawl_source(s) for s in sources], return_exceptions=True)
 

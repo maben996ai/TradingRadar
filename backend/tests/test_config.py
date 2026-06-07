@@ -13,7 +13,6 @@ def test_settings_default_types():
     assert isinstance(s.secret_key, str)
     assert isinstance(s.access_token_expire_minutes, int)
     assert isinstance(s.youtube_api_key, str)
-    assert isinstance(s.bilibili_sessdata, str)
     assert isinstance(s.dev_account_email, str)
     assert isinstance(s.dev_account_display_name, str)
     assert isinstance(s.dev_account_password, str)
@@ -43,12 +42,10 @@ def test_settings_reads_from_environment(monkeypatch):
 
 def test_settings_environment_overrides_default(monkeypatch):
     monkeypatch.setenv("YOUTUBE_API_KEY", "my-youtube-key")
-    monkeypatch.setenv("BILIBILI_SESSDATA", "my-sessdata")
 
     s = Settings(_env_file=None)
 
     assert s.youtube_api_key == "my-youtube-key"
-    assert s.bilibili_sessdata == "my-sessdata"
 
 
 def test_get_settings_returns_same_instance():
