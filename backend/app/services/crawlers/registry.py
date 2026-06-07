@@ -1,4 +1,5 @@
 from app.models.models import SourceType
+from app.services.crawlers.twitter import TwitterCrawler
 from app.services.crawlers.youtube import YouTubeCrawler
 
 
@@ -6,6 +7,7 @@ class CrawlerRegistry:
     def __init__(self) -> None:
         self._crawlers = {
             SourceType.YOUTUBE: YouTubeCrawler(),
+            SourceType.TWITTER: TwitterCrawler(),
         }
 
     def get(self, source_type: SourceType):

@@ -90,6 +90,7 @@ const messages = {
       comingSoon: "该板块即将上线",
       platformBilibili: "Bilibili",
       platformYoutube: "YouTube",
+      platformTwitter: "X",
       platformWechat: "公众号",
       platformWebsite: "网站",
     },
@@ -206,6 +207,7 @@ const messages = {
       comingSoon: "This section is coming soon",
       platformBilibili: "Bilibili",
       platformYoutube: "YouTube",
+      platformTwitter: "X",
       platformWechat: "WeChat",
       platformWebsite: "Website",
     },
@@ -318,6 +320,7 @@ type MessageKey =
   | "dataSources.comingSoon"
   | "dataSources.platformBilibili"
   | "dataSources.platformYoutube"
+  | "dataSources.platformTwitter"
   | "dataSources.platformWechat"
   | "dataSources.platformWebsite"
   | "contentAnalysis.eyebrow"

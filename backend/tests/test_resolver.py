@@ -13,6 +13,13 @@ MOCK_YOUTUBE_SOURCE = SourceInfo(
     avatar_url=None,
 )
 
+MOCK_TWITTER_SOURCE = SourceInfo(
+    platform_id="12345",
+    name="Test User",
+    profile_url="https://x.com/testuser",
+    avatar_url=None,
+)
+
 
 def make_mock_crawler(source_info: SourceInfo) -> AsyncMock:
     crawler = AsyncMock()
@@ -38,9 +45,26 @@ class TestResolverPatternMatching:
             source_type, _ = await resolve_source(url)
         assert source_type == SourceType.YOUTUBE
 
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://x.com/testuser",
+            "https://www.x.com/testuser",
+            "https://twitter.com/testuser",
+            "https://www.twitter.com/testuser?ref=profile",
+        ],
+    )
+    async def test_twitter_urls_resolve_to_twitter_source_type(self, url):
+        with patch(
+            "app.services.resolver.crawler_registry.get",
+            return_value=make_mock_crawler(MOCK_TWITTER_SOURCE),
+        ):
+            source_type, _ = await resolve_source(url)
+        assert source_type == SourceType.TWITTER
+
     async def test_unsupported_url_raises_value_error(self):
         with pytest.raises(ValueError, match="Unsupported source URL"):
-            await resolve_source("https://twitter.com/someone")
+            await resolve_source("https://twitter.com/someone/status/12345")
 
     async def test_url_with_leading_spaces_is_normalized(self):
         with patch(
