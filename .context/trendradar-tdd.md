@@ -1,8 +1,8 @@
-# TrendRadar 技术方案文档
+# TradingRader 技术方案文档
 
 > **版本：** v1.0
 > **日期：** 2026-04-12
-> **作者：** TrendRadar 团队
+> **作者：** TradingRader 团队
 > **对应 PRD：** context/prd.md v1.0
 
 ---
