@@ -3,7 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, content_items, crawl_logs, data_sources, settings, webhooks
+from app.api import (
+    auth,
+    calendar,
+    content_items,
+    crawl_logs,
+    data_sources,
+    macro,
+    settings,
+    webhooks,
+)
 from app.core.database import init_db
 from app.services.scheduler import scheduler_service
 
@@ -45,3 +54,5 @@ app.include_router(content_items.router, prefix="/api/content-items", tags=["con
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 app.include_router(crawl_logs.router, prefix="/api/crawl-logs", tags=["crawl-logs"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
+app.include_router(macro.router, prefix="/api/macro", tags=["macro"])
+app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])

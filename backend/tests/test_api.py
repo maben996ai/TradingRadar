@@ -17,8 +17,8 @@ REGISTER_PAYLOAD = {
 
 MOCK_SOURCE_INFO = SourceInfo(
     platform_id="123456",
-    name="测试UP主",
-    profile_url="https://space.bilibili.com/123456",
+    name="测试创作者",
+    profile_url="https://www.youtube.com/",
     avatar_url=None,
 )
 
@@ -109,32 +109,32 @@ class TestDataSourcesAPI:
     async def test_create_data_source_returns_201(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 201
         body = resp.json()
-        assert body["name"] == "测试UP主"
-        assert body["source_type"] == "bilibili"
+        assert body["name"] == "测试创作者"
+        assert body["source_type"] == "youtube"
         assert body["external_id"] == "123456"
 
     async def test_create_duplicate_data_source_returns_409(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 409
@@ -154,11 +154,11 @@ class TestDataSourcesAPI:
     async def test_delete_data_source_returns_204(self, client, auth_headers, db):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -173,11 +173,11 @@ class TestDataSourcesAPI:
         """新建信源响应里 initialized_at 为 null，表示正在初始化。"""
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 201
@@ -189,13 +189,13 @@ class TestDataSourcesAPI:
         with (
             patch(
                 "app.api.data_sources.resolve_source",
-                new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+                new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
             ),
             patch("app.api.data_sources._run_initial_crawl", new=mock_initial_crawl),
         ):
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 201
@@ -205,11 +205,11 @@ class TestDataSourcesAPI:
         """不再对外暴露手动触发抓取端点。"""
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -219,11 +219,11 @@ class TestDataSourcesAPI:
     async def test_patch_data_source_note(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -247,11 +247,11 @@ class TestDataSourcesAPI:
     async def test_patch_data_source_note_clears_to_none(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456", "note": "原备注"},
+                json={"url": "https://www.youtube.com/", "note": "原备注"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -267,11 +267,11 @@ class TestDataSourcesAPI:
     async def test_create_data_source_default_category_is_none(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 201
@@ -280,11 +280,11 @@ class TestDataSourcesAPI:
     async def test_patch_data_source_category(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -300,11 +300,11 @@ class TestDataSourcesAPI:
     async def test_create_data_source_default_starred_is_false(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         assert resp.status_code == 201
@@ -313,11 +313,11 @@ class TestDataSourcesAPI:
     async def test_patch_data_source_starred(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -333,11 +333,11 @@ class TestDataSourcesAPI:
     async def test_list_data_sources_filter_starred(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             create_resp = await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
         source_id = create_resp.json()["id"]
@@ -356,11 +356,11 @@ class TestDataSourcesAPI:
     async def test_list_data_sources_filter_starred_excludes_unstarred(self, client, auth_headers):
         with patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ):
             await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456"},
+                json={"url": "https://www.youtube.com/"},
                 headers=auth_headers,
             )
 
@@ -376,18 +376,18 @@ class TestVideosAPI:
     async def _seed_video(self, db, user_id: str) -> ContentItem:
         source = DataSource(
             user_id=user_id,
-            source_type=SourceType.BILIBILI,
+            source_type=SourceType.YOUTUBE,
             external_id="111",
             name="Seeded Source",
-            profile_url="https://space.bilibili.com/111",
+            profile_url="https://www.youtube.com/@seeded-source",
         )
         db.add(source)
         await db.flush()
         video = ContentItem(
             data_source_id=source.id,
-            platform_id="BVtest",
+            platform_id="VIDtest",
             title="Test Video",
-            content_url="https://www.bilibili.com/video/BVtest",
+            content_url="https://www.youtube.com/watch?v=VIDtest",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(video)
@@ -409,7 +409,7 @@ class TestVideosAPI:
         user_id = me_resp.json()["id"]
         await self._seed_video(db, user_id)
 
-        resp = await client.get("/api/content-items?source_type=youtube", headers=auth_headers)
+        resp = await client.get("/api/content-items?source_type=twitter", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["items"] == []
 
@@ -457,10 +457,10 @@ class TestCrawlLogsAPI:
     ) -> CrawlLog:
         source = DataSource(
             user_id=user_id,
-            source_type=SourceType.BILIBILI,
+            source_type=SourceType.YOUTUBE,
             external_id=external_id,
             name="Log Source",
-            profile_url=f"https://space.bilibili.com/{external_id}",
+            profile_url=f"https://www.youtube.com/@log-{external_id}",
         )
         db.add(source)
         await db.flush()

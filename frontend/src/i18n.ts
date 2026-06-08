@@ -98,7 +98,6 @@ const messages = {
       tabNews: "资讯",
       tabMarket: "市场",
       comingSoon: "该板块即将上线",
-      platformBilibili: "Bilibili",
       platformYoutube: "YouTube",
       platformTwitter: "X",
       platformWechat: "公众号",
@@ -108,6 +107,62 @@ const messages = {
       eyebrow: "投研分析",
       title: "投研分析",
       description: "基于大模型的视频内容分析与投研洞察，即将上线。",
+    },
+    macro: {
+      eyebrow: "市场宏观",
+      title: "宏观看板",
+      loading: "加载中…",
+      empty: "暂无宏观数据，请先在控制中心或后台刷新 FRED 数据。",
+      error: "加载失败，请稍后重试。",
+      range_3m: "3个月",
+      range_6m: "6个月",
+      range_1y: "1年",
+      range_3y: "3年",
+      previous: "前值",
+      updated: "更新",
+      source: "来源",
+      judge_bullish: "利好",
+      judge_neutral: "中性",
+      judge_bearish: "利空",
+      warnRange: "预警区间",
+      warnLow: "低位",
+      warnHigh: "高位",
+      zone_high: "高位",
+      zone_normal: "正常",
+      zone_low: "低位",
+      forecast: "预测",
+    },
+    calendar: {
+      eyebrow: "财经日历",
+      title: "核心财经事件日历",
+      loading: "加载中…",
+      error: "加载失败，请稍后重试。",
+      empty: "所选范围内暂无事件。",
+      tzBeijing: "北京",
+      tzEastern: "美东",
+      cat_inflation: "通胀",
+      cat_employment: "就业",
+      cat_rates: "联邦利率",
+      cat_growth: "经济增长",
+      cat_earnings: "美股财报",
+      preset_today: "今天",
+      preset_week: "未来一周",
+      preset_month: "未来一月",
+      tracked: "关注代码",
+      addTickerPlaceholder: "添加代码，如 AMD",
+      add: "添加",
+      trackedOnly: "仅看关注",
+      allDay: "全天",
+      colTime: "时间",
+      colImportance: "重要性",
+      colEvent: "事件",
+      colPrevious: "前值",
+      colForecast: "预期",
+      colActual: "实际",
+      colAssets: "影响资产",
+      colSource: "来源",
+      follow: "关注",
+      followed: "已关注",
     },
     auth: {
       loginEyebrow: "欢迎回来",
@@ -226,7 +281,6 @@ const messages = {
       tabNews: "News",
       tabMarket: "Market",
       comingSoon: "This section is coming soon",
-      platformBilibili: "Bilibili",
       platformYoutube: "YouTube",
       platformTwitter: "X",
       platformWechat: "WeChat",
@@ -236,6 +290,62 @@ const messages = {
       eyebrow: "Research Analysis",
       title: "Research Analysis",
       description: "AI-powered content analysis and investment insights — coming soon.",
+    },
+    macro: {
+      eyebrow: "Market Macro",
+      title: "Macro Dashboard",
+      loading: "Loading…",
+      empty: "No macro data yet. Refresh FRED data first.",
+      error: "Failed to load. Please try again.",
+      range_3m: "3M",
+      range_6m: "6M",
+      range_1y: "1Y",
+      range_3y: "3Y",
+      previous: "Prev",
+      updated: "Updated",
+      source: "Source",
+      judge_bullish: "Bullish",
+      judge_neutral: "Neutral",
+      judge_bearish: "Bearish",
+      warnRange: "Alert range",
+      warnLow: "Low",
+      warnHigh: "High",
+      zone_high: "High",
+      zone_normal: "Normal",
+      zone_low: "Low",
+      forecast: "Forecast",
+    },
+    calendar: {
+      eyebrow: "Calendar",
+      title: "Financial Events Calendar",
+      loading: "Loading…",
+      error: "Failed to load. Please try again.",
+      empty: "No events in the selected range.",
+      tzBeijing: "Beijing",
+      tzEastern: "US East",
+      cat_inflation: "Inflation",
+      cat_employment: "Employment",
+      cat_rates: "Fed Rates",
+      cat_growth: "Growth",
+      cat_earnings: "Earnings",
+      preset_today: "Today",
+      preset_week: "Next 7d",
+      preset_month: "Next 30d",
+      tracked: "Tracked",
+      addTickerPlaceholder: "Add ticker, e.g. AMD",
+      add: "Add",
+      trackedOnly: "Tracked only",
+      allDay: "All day",
+      colTime: "Time",
+      colImportance: "Impact",
+      colEvent: "Event",
+      colPrevious: "Prev",
+      colForecast: "Forecast",
+      colActual: "Actual",
+      colAssets: "Assets",
+      colSource: "Source",
+      follow: "Follow",
+      followed: "Following",
     },
     auth: {
       loginEyebrow: "Welcome back",
@@ -349,7 +459,6 @@ type MessageKey =
   | "dataSources.tabNews"
   | "dataSources.tabMarket"
   | "dataSources.comingSoon"
-  | "dataSources.platformBilibili"
   | "dataSources.platformYoutube"
   | "dataSources.platformTwitter"
   | "dataSources.platformWechat"
@@ -357,6 +466,58 @@ type MessageKey =
   | "contentAnalysis.eyebrow"
   | "contentAnalysis.title"
   | "contentAnalysis.description"
+  | "macro.eyebrow"
+  | "macro.title"
+  | "macro.loading"
+  | "macro.empty"
+  | "macro.error"
+  | "macro.range_3m"
+  | "macro.range_6m"
+  | "macro.range_1y"
+  | "macro.range_3y"
+  | "macro.previous"
+  | "macro.updated"
+  | "macro.source"
+  | "macro.judge_bullish"
+  | "macro.judge_neutral"
+  | "macro.judge_bearish"
+  | "macro.warnRange"
+  | "macro.warnLow"
+  | "macro.warnHigh"
+  | "macro.zone_high"
+  | "macro.zone_normal"
+  | "macro.zone_low"
+  | "macro.forecast"
+  | "calendar.eyebrow"
+  | "calendar.title"
+  | "calendar.loading"
+  | "calendar.error"
+  | "calendar.empty"
+  | "calendar.tzBeijing"
+  | "calendar.tzEastern"
+  | "calendar.cat_inflation"
+  | "calendar.cat_employment"
+  | "calendar.cat_rates"
+  | "calendar.cat_growth"
+  | "calendar.cat_earnings"
+  | "calendar.preset_today"
+  | "calendar.preset_week"
+  | "calendar.preset_month"
+  | "calendar.tracked"
+  | "calendar.addTickerPlaceholder"
+  | "calendar.add"
+  | "calendar.trackedOnly"
+  | "calendar.allDay"
+  | "calendar.colTime"
+  | "calendar.colImportance"
+  | "calendar.colEvent"
+  | "calendar.colPrevious"
+  | "calendar.colForecast"
+  | "calendar.colActual"
+  | "calendar.colAssets"
+  | "calendar.colSource"
+  | "calendar.follow"
+  | "calendar.followed"
   | "auth.loginEyebrow"
   | "auth.loginTitle"
   | "auth.registerEyebrow"

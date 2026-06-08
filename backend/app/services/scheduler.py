@@ -5,14 +5,32 @@ from datetime import UTC, datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import func, select
 
+from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal
-from app.models.models import ContentItem, CrawlLogStatus, DataSource, CrawlLog, FeishuWebhook
+from app.models.models import (
+    ContentItem,
+    CrawlLogStatus,
+    DataSource,
+    CrawlLog,
+    CalendarEvent,
+    FeishuWebhook,
+    MacroObservation,
+    SourceType,
+)
+from app.services.calendar.service import refresh_all as refresh_calendar_all
 from app.services.crawlers.registry import crawler_registry
+from app.services.macro.service import refresh_all as refresh_macro_all
 from app.services.notifiers.feishu import FeishuNotifier
 
 logger = logging.getLogger(__name__)
 
 _notifier = FeishuNotifier()
+
+REGULAR_CRAWL_INTERVAL_MINUTES = 30
+SOCIAL_MEDIA_CRAWL_INTERVAL_MINUTES = 15
+SOCIAL_MEDIA_SOURCE_TYPES = (SourceType.TWITTER,)
+# 宏观/日历每天一次，固定在美股收盘+财报落定后：23:00 UTC ≈ 北京 07:00
+DAILY_REFRESH_UTC_HOUR = 23
 
 
 class SchedulerService:
@@ -24,16 +42,50 @@ class SchedulerService:
         if self._started:
             return
         self.scheduler.add_job(
-            crawl_all_sources,
+            crawl_regular_sources,
             "interval",
-            minutes=30,
-            id="crawl_all_sources",
+            minutes=REGULAR_CRAWL_INTERVAL_MINUTES,
+            id="crawl_regular_sources",
             replace_existing=True,
             coalesce=True,
             misfire_grace_time=300,
         )
+        self.scheduler.add_job(
+            crawl_social_media_sources,
+            "interval",
+            minutes=SOCIAL_MEDIA_CRAWL_INTERVAL_MINUTES,
+            id="crawl_social_media_sources",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=300,
+        )
+        self.scheduler.add_job(
+            refresh_macro_indicators,
+            "cron",
+            hour=DAILY_REFRESH_UTC_HOUR,
+            minute=0,
+            timezone="UTC",
+            id="refresh_macro_indicators",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
+        self.scheduler.add_job(
+            refresh_calendar_events,
+            "cron",
+            hour=DAILY_REFRESH_UTC_HOUR,
+            minute=0,
+            timezone="UTC",
+            id="refresh_calendar_events",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
         self.scheduler.start()
         self._started = True
+        # 首启若数据为空则立即生成一次（不阻塞启动）
+        asyncio.create_task(_initial_macro_refresh())
+        asyncio.create_task(_initial_calendar_refresh())
 
     async def stop(self) -> None:
         if not self._started:
@@ -44,6 +96,44 @@ class SchedulerService:
 
 FIRST_CRAWL_LIMIT = 30
 INCREMENTAL_CRAWL_LIMIT = 2
+
+
+async def refresh_macro_indicators() -> None:
+    """每日刷新宏观指标观测；未配置 FRED_API_KEY 时跳过。"""
+    if not get_settings().fred_api_key:
+        return
+    async with AsyncSessionLocal() as db:
+        try:
+            inserted = await refresh_macro_all(db)
+            logger.info("Macro refresh inserted %d observations", inserted)
+        except Exception as exc:
+            logger.warning("Macro refresh failed: %s", exc)
+
+
+async def _initial_macro_refresh() -> None:
+    if not get_settings().fred_api_key:
+        return
+    async with AsyncSessionLocal() as db:
+        count = await db.scalar(select(func.count()).select_from(MacroObservation))
+    if (count or 0) == 0:
+        await refresh_macro_indicators()
+
+
+async def refresh_calendar_events() -> None:
+    """每日刷新财经日历事件（精选种子 / TE / FMP，按可用 key 自动选择）。"""
+    async with AsyncSessionLocal() as db:
+        try:
+            inserted = await refresh_calendar_all(db)
+            logger.info("Calendar refresh inserted %d events", inserted)
+        except Exception as exc:
+            logger.warning("Calendar refresh failed: %s", exc)
+
+
+async def _initial_calendar_refresh() -> None:
+    async with AsyncSessionLocal() as db:
+        count = await db.scalar(select(func.count()).select_from(CalendarEvent))
+    if (count or 0) == 0:
+        await refresh_calendar_events()
 
 
 async def _get_webhook_urls(user_id: str) -> list[str]:
@@ -190,13 +280,14 @@ async def crawl_source(source: DataSource) -> int:
     return inserted_count
 
 
-async def crawl_all_sources() -> None:
+async def _crawl_sources(source_types: tuple[SourceType, ...]) -> None:
+    if not source_types:
+        return
+
     async with AsyncSessionLocal() as db:
-        sources = list(await db.scalars(
-            select(DataSource).where(
-                DataSource.source_type.in_(crawler_registry.supported_types())
-            )
-        ))
+        sources = list(
+            await db.scalars(select(DataSource).where(DataSource.source_type.in_(source_types)))
+        )
 
     results = await asyncio.gather(*[crawl_source(s) for s in sources], return_exceptions=True)
 
@@ -215,6 +306,23 @@ async def crawl_all_sources() -> None:
                 )
             )
         await db.commit()
+
+
+async def crawl_all_sources() -> None:
+    await _crawl_sources(crawler_registry.supported_types())
+
+
+async def crawl_regular_sources() -> None:
+    source_types = tuple(
+        source_type
+        for source_type in crawler_registry.supported_types()
+        if source_type not in SOCIAL_MEDIA_SOURCE_TYPES
+    )
+    await _crawl_sources(source_types)
+
+
+async def crawl_social_media_sources() -> None:
+    await _crawl_sources(SOCIAL_MEDIA_SOURCE_TYPES)
 
 
 scheduler_service = SchedulerService()

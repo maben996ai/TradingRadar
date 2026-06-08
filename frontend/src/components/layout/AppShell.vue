@@ -26,83 +26,60 @@
 
           <!-- 金融时讯（静态占位分类） -->
           <div class="nav-item expandable" @click="toggleExpand('financeNews')">
-            <span class="nav-item-toggle" :class="{ expanded: expanded.financeNews }">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+            <span class="nav-item-toggle" :class="{ expanded: expanded.financeNews }" @click.stop="toggleExpand('financeNews')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.financeNews") }}</span>
-            <span class="nav-item-count">{{ financeNewsItems.length }}</span>
-          </div>
+            <span class="nav-item-label">{{ t("nav.financeNews") }}</span>          </div>
           <div class="nav-children" :class="{ expanded: expanded.financeNews }">
             <div v-for="item in financeNewsItems" :key="item" class="nav-child">
-              <span class="nav-item-icon"><span class="dot dot-news"></span></span>
               <span class="nav-item-label">{{ item }}</span>
             </div>
           </div>
 
           <!-- 社交媒体（真实订阅博主） -->
-          <div class="nav-item expandable" @click="toggleExpand('socialMedia')">
-            <span class="nav-item-toggle" :class="{ expanded: expanded.socialMedia }">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+          <div class="nav-item expandable" @click="openPlatform('socialMedia', '/feed/twitter')">
+            <span class="nav-item-toggle" :class="{ expanded: expanded.socialMedia }" @click.stop="toggleExpand('socialMedia')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.socialMedia") }}</span>
-            <span class="nav-item-count">{{ twitterSources.length }}</span>
-          </div>
+            <span class="nav-item-label">{{ t("nav.socialMedia") }}</span>          </div>
           <div class="nav-children" :class="{ expanded: expanded.socialMedia }">
             <RouterLink v-for="s in twitterSources" :key="s.id" :to="`/source/${s.id}`" class="nav-child">
-              <span class="nav-item-icon"><span class="dot dot-twitter"></span></span>
+              <img v-if="sourceHasContent(s.id) && s.avatar_url" :src="s.avatar_url" :alt="s.name" class="nav-source-avatar" referrerpolicy="no-referrer" />
+              <span v-else-if="sourceHasContent(s.id)" class="nav-source-avatar nav-source-avatar-placeholder">{{ sourceInitial(s.name) }}</span>
+              <span v-else class="nav-item-icon"><span class="dot dot-twitter"></span></span>
               <span class="nav-item-label">{{ s.name }}</span>
             </RouterLink>
           </div>
 
           <!-- 财经视频（真实订阅博主） -->
-          <div class="nav-item expandable" @click="toggleExpand('financeVideo')">
-            <span class="nav-item-toggle" :class="{ expanded: expanded.financeVideo }">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+          <div class="nav-item expandable" @click="openPlatform('financeVideo', '/feed/youtube')">
+            <span class="nav-item-toggle" :class="{ expanded: expanded.financeVideo }" @click.stop="toggleExpand('financeVideo')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M10 9l5 3-5 3z" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.financeVideo") }}</span>
-            <span class="nav-item-count">{{ youtubeSources.length }}</span>
-          </div>
+            <span class="nav-item-label">{{ t("nav.financeVideo") }}</span>          </div>
           <div class="nav-children" :class="{ expanded: expanded.financeVideo }">
             <RouterLink v-for="s in youtubeSources" :key="s.id" :to="`/source/${s.id}`" class="nav-child">
-              <span class="nav-item-icon"><span class="dot dot-youtube"></span></span>
+              <img v-if="sourceHasContent(s.id) && s.avatar_url" :src="s.avatar_url" :alt="s.name" class="nav-source-avatar" referrerpolicy="no-referrer" />
+              <span v-else-if="sourceHasContent(s.id)" class="nav-source-avatar nav-source-avatar-placeholder">{{ sourceInitial(s.name) }}</span>
+              <span v-else class="nav-item-icon"><span class="dot dot-youtube"></span></span>
               <span class="nav-item-label">{{ s.name }}</span>
             </RouterLink>
           </div>
 
-          <!-- 市场宏观（静态占位分类） -->
-          <div class="nav-item expandable" @click="toggleExpand('macroMarket')">
-            <span class="nav-item-toggle" :class="{ expanded: expanded.macroMarket }">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-            </span>
+          <!-- 市场宏观（真实看板，单一入口，无子项） -->
+          <RouterLink to="/macro-market" class="nav-item">
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg></span>
             <span class="nav-item-label">{{ t("nav.macroMarket") }}</span>
-            <span class="nav-item-count">{{ macroItems.length }}</span>
-          </div>
-          <div class="nav-children" :class="{ expanded: expanded.macroMarket }">
-            <div v-for="item in macroItems" :key="item" class="nav-child">
-              <span class="nav-item-icon"><span class="dot dot-macro"></span></span>
-              <span class="nav-item-label">{{ item }}</span>
-            </div>
-          </div>
+          </RouterLink>
 
-          <!-- 财经日历（静态占位分类） -->
-          <div class="nav-item expandable" @click="toggleExpand('financeCalendar')">
-            <span class="nav-item-toggle" :class="{ expanded: expanded.financeCalendar }">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-            </span>
+          <!-- 财经日历（真实事件日历，单一入口，无子项） -->
+          <RouterLink to="/calendar" class="nav-item">
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg></span>
             <span class="nav-item-label">{{ t("nav.financeCalendar") }}</span>
-            <span class="nav-item-count">{{ calendarItems.length }}</span>
-          </div>
-          <div class="nav-children" :class="{ expanded: expanded.financeCalendar }">
-            <div v-for="item in calendarItems" :key="item" class="nav-child">
-              <span class="nav-item-icon"><span class="dot dot-calendar"></span></span>
-              <span class="nav-item-label">{{ item }}</span>
-            </div>
-          </div>
+          </RouterLink>
         </div>
 
         <!-- 分析 -->
@@ -114,14 +91,10 @@
           </RouterLink>
           <div class="nav-children expanded">
             <div class="nav-child">
-              <span class="nav-item-icon"><span class="dot" style="background:#a855f7"></span></span>
               <span class="nav-item-label">{{ t("nav.stockAnalysis") }}</span>
-              <span class="nav-item-count">12</span>
             </div>
             <div class="nav-child">
-              <span class="nav-item-icon"><span class="dot" style="background:#06b6d4"></span></span>
               <span class="nav-item-label">{{ t("nav.marketAnalysis") }}</span>
-              <span class="nav-item-count">6</span>
             </div>
           </div>
         </div>
@@ -176,32 +149,62 @@ import { RouterLink, RouterView, useRouter } from "vue-router";
 import { dataSourcesApi } from "../../api/data-sources";
 import { useI18n } from "../../i18n";
 import { useAuthStore } from "../../stores/auth";
+import { useFeedStore } from "../../stores/feed";
 import type { DataSource } from "../../types";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const feedStore = useFeedStore();
 const { t, locale, setLocale } = useI18n();
 
 // 真实订阅信源：社交媒体 / 财经视频 展开后的博主来自这里
 const sources = ref<DataSource[]>([]);
-const twitterSources = computed(() => sources.value.filter((s) => s.source_type === "twitter"));
-const youtubeSources = computed(() => sources.value.filter((s) => s.source_type === "youtube"));
+const latestBySourceId = computed(() => {
+  const latest = new Map<string, number>();
+  for (const item of feedStore.videos) {
+    const ts = new Date(item.published_at).getTime();
+    const current = latest.get(item.data_source_id) ?? 0;
+    if (ts > current) latest.set(item.data_source_id, ts);
+  }
+  return latest;
+});
+// 按最新发文时间降序：新发内容的作者排最前；无内容的按添加时间兜底
+function sortByLatest(list: DataSource[]): DataSource[] {
+  return [...list].sort((a, b) => {
+    const aLatest = latestBySourceId.value.get(a.id) ?? 0;
+    const bLatest = latestBySourceId.value.get(b.id) ?? 0;
+    if (aLatest !== bLatest) return bLatest - aLatest;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
+const twitterSources = computed(() =>
+  sortByLatest(sources.value.filter((s) => s.source_type === "twitter"))
+);
+const youtubeSources = computed(() =>
+  sortByLatest(sources.value.filter((s) => s.source_type === "youtube"))
+);
 
 // 静态占位分类（金融时讯 / 市场宏观 / 财经日历，后端暂未提供真实数据）
 const financeNewsItems = computed(() => [
   t("nav.srcJin10"), t("nav.srcYahoo"), t("nav.srcBloomberg"), t("nav.srcReuters"),
 ]);
-const macroItems = computed(() => [
-  t("nav.macroRates"), t("nav.macroInflation"), t("nav.macroGrowth"),
-  t("nav.macroEmployment"), t("nav.macroLiquidity"), t("nav.macroRisk"),
-]);
-const calendarItems = computed(() => [
-  t("nav.calCentralBank"), t("nav.calIndustry"), t("nav.calEarnings"),
-]);
 
-const expanded = reactive<Record<string, boolean>>({ socialMedia: true });
+const expanded = reactive<Record<string, boolean>>({});
 function toggleExpand(key: string) {
   expanded[key] = !expanded[key];
+}
+
+function openPlatform(key: string, path: string) {
+  expanded[key] = true;
+  router.push(path);
+}
+
+function sourceHasContent(sourceId: string): boolean {
+  return latestBySourceId.value.has(sourceId);
+}
+
+function sourceInitial(name: string): string {
+  return name.trim().slice(0, 1).toUpperCase() || "?";
 }
 
 const userInitials = computed(() => {
@@ -215,6 +218,7 @@ function handleLogout() {
 }
 
 onMounted(async () => {
+  if (!feedStore.videos.length) feedStore.fetchVideos();
   try {
     const resp = await dataSourcesApi.list();
     sources.value = resp.data as DataSource[];

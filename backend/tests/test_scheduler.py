@@ -6,16 +6,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.models import (
+    ContentItem,
     CrawlLog,
     CrawlLogStatus,
     DataSource,
     FeishuWebhook,
     SourceType,
     User,
-    ContentItem,
 )
 from app.services.crawlers.base import CrawledItem
-from app.services.scheduler import SchedulerService, crawl_all_sources, crawl_source
+from app.services.scheduler import (
+    SchedulerService,
+    crawl_all_sources,
+    crawl_regular_sources,
+    crawl_social_media_sources,
+    crawl_source,
+    refresh_calendar_events,
+    refresh_macro_indicators,
+)
 
 
 def make_user() -> User:
@@ -33,14 +41,14 @@ def make_source(user_id: str, source_type: SourceType = SourceType.YOUTUBE) -> D
 
 
 def make_video(
-    platform_id: str = "BV001",
+    platform_id: str = "VID001",
     title: str = "Test Video",
     published_at: datetime | None = None,
 ) -> CrawledItem:
     return CrawledItem(
         platform_id=platform_id,
         title=title,
-        content_url=f"https://www.bilibili.com/video/{platform_id}",
+        content_url=f"https://www.youtube.com/watch?v={platform_id}",
         published_at=published_at or datetime(2024, 1, 1, tzinfo=UTC),
     )
 
@@ -60,6 +68,49 @@ class TestSchedulerService:
             await svc.start()
             await svc.start()
         mock_start.assert_called_once()
+
+    async def test_start_registers_regular_and_social_media_jobs(self):
+        svc = SchedulerService()
+        with (
+            patch.object(svc.scheduler, "start"),
+            patch.object(svc.scheduler, "add_job") as mock_add_job,
+        ):
+            await svc.start()
+
+        jobs = {
+            call.args[0]: {
+                "trigger": call.args[1],
+                "minutes": call.kwargs.get("minutes"),
+                "hour": call.kwargs.get("hour"),
+                "id": call.kwargs["id"],
+            }
+            for call in mock_add_job.call_args_list
+        }
+        assert jobs[crawl_regular_sources] == {
+            "trigger": "interval",
+            "minutes": 30,
+            "hour": None,
+            "id": "crawl_regular_sources",
+        }
+        assert jobs[crawl_social_media_sources] == {
+            "trigger": "interval",
+            "minutes": 15,
+            "hour": None,
+            "id": "crawl_social_media_sources",
+        }
+        # 宏观/日历改为每日固定 23:00 UTC 的 cron
+        assert jobs[refresh_macro_indicators] == {
+            "trigger": "cron",
+            "minutes": None,
+            "hour": 23,
+            "id": "refresh_macro_indicators",
+        }
+        assert jobs[refresh_calendar_events] == {
+            "trigger": "cron",
+            "minutes": None,
+            "hour": 23,
+            "id": "refresh_calendar_events",
+        }
 
     async def test_stop_is_idempotent(self):
         svc = SchedulerService()
@@ -88,7 +139,7 @@ class TestCrawlSource:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -99,9 +150,11 @@ class TestCrawlSource:
 
         assert inserted == 1
         async with session_factory() as s:
-            videos = list(await s.scalars(select(ContentItem).where(ContentItem.data_source_id == source.id)))
+            videos = list(
+                await s.scalars(select(ContentItem).where(ContentItem.data_source_id == source.id))
+            )
         assert len(videos) == 1
-        assert videos[0].platform_id == "BV001"
+        assert videos[0].platform_id == "VID001"
 
     async def test_duplicate_videos_are_not_reinserted(self, db, session_factory):
         user = make_user()
@@ -112,16 +165,16 @@ class TestCrawlSource:
         await db.flush()
         existing = ContentItem(
             data_source_id=source.id,
-            platform_id="BV001",
+            platform_id="VID001",
             title="Existing",
-            content_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.youtube.com/watch?v=VID001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(existing)
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -141,7 +194,7 @@ class TestCrawlSource:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -191,10 +244,10 @@ class TestCrawlSourceDedup:
         await db.flush()
         existing = ContentItem(
             data_source_id=source.id,
-            platform_id="BV001",
+            platform_id="VID001",
             title="Original Title",
             thumbnail_url="https://cdn/old.jpg",
-            content_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.youtube.com/watch?v=VID001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         db.add(existing)
@@ -202,7 +255,7 @@ class TestCrawlSourceDedup:
 
         mock_crawler = AsyncMock()
         mock_crawler.fetch_latest_items = AsyncMock(
-            return_value=[make_video("BV001", title="Updated Title")]
+            return_value=[make_video("VID001", title="Updated Title")]
         )
 
         with (
@@ -213,7 +266,7 @@ class TestCrawlSourceDedup:
             await crawl_source(source)
 
         async with session_factory() as s:
-            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "VID001"))
         assert row.title == "Original Title"
         assert row.thumbnail_url == "https://cdn/old.jpg"
 
@@ -233,7 +286,7 @@ class TestCrawlSourceInitialization:
         assert row.initialized_at is None
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -282,9 +335,9 @@ class TestCrawlSourceInitialization:
         await db.flush()
         existing = ContentItem(
             data_source_id=source.id,
-            platform_id="BV001",
+            platform_id="VID001",
             title="Existing",
-            content_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.youtube.com/watch?v=VID001",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
             notified_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
@@ -292,7 +345,7 @@ class TestCrawlSourceInitialization:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV002")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID002")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -328,9 +381,9 @@ class TestCrawlSourceNotifications:
 
         base = datetime(2024, 6, 1, tzinfo=UTC)
         crawled = [
-            make_video("BV003", title="newest", published_at=base + timedelta(hours=2)),
-            make_video("BV002", title="middle", published_at=base + timedelta(hours=1)),
-            make_video("BV001", title="oldest", published_at=base),
+            make_video("VID003", title="newest", published_at=base + timedelta(hours=2)),
+            make_video("VID002", title="middle", published_at=base + timedelta(hours=1)),
+            make_video("VID001", title="oldest", published_at=base),
         ]
         mock_crawler = AsyncMock()
         mock_crawler.fetch_latest_items = AsyncMock(return_value=crawled)
@@ -346,7 +399,7 @@ class TestCrawlSourceNotifications:
         mock_send.assert_awaited_once()
         _, kwargs = mock_send.await_args
         assert kwargs["title"] == "newest"
-        assert kwargs["content_url"].endswith("BV003")
+        assert kwargs["content_url"].endswith("VID003")
         assert kwargs["is_new_creator"] is True
 
     async def test_first_crawl_premarks_older_videos_as_notified(self, db, session_factory):
@@ -360,9 +413,9 @@ class TestCrawlSourceNotifications:
 
         base = datetime(2024, 6, 1, tzinfo=UTC)
         crawled = [
-            make_video("BV003", title="newest", published_at=base + timedelta(hours=2)),
-            make_video("BV002", title="middle", published_at=base + timedelta(hours=1)),
-            make_video("BV001", title="oldest", published_at=base),
+            make_video("VID003", title="newest", published_at=base + timedelta(hours=2)),
+            make_video("VID002", title="middle", published_at=base + timedelta(hours=1)),
+            make_video("VID001", title="oldest", published_at=base),
         ]
         mock_crawler = AsyncMock()
         mock_crawler.fetch_latest_items = AsyncMock(return_value=crawled)
@@ -405,7 +458,7 @@ class TestCrawlSourceNotifications:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -417,7 +470,7 @@ class TestCrawlSourceNotifications:
 
         mock_send.assert_awaited()
         async with session_factory() as s:
-            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "VID001"))
         assert row.notified_at is not None
 
     async def test_failed_notification_leaves_notified_at_null(self, db, session_factory):
@@ -438,7 +491,7 @@ class TestCrawlSourceNotifications:
         await db.commit()
 
         mock_crawler = AsyncMock()
-        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("BV001")])
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("VID001")])
 
         with (
             patch("app.services.scheduler.crawler_registry") as mock_registry,
@@ -452,7 +505,7 @@ class TestCrawlSourceNotifications:
             await crawl_source(source)
 
         async with session_factory() as s:
-            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "VID001"))
         assert row.notified_at is None
 
     async def test_retry_succeeds_after_previous_failure(self, db, session_factory):
@@ -473,9 +526,9 @@ class TestCrawlSourceNotifications:
         )
         existing = ContentItem(
             data_source_id=source.id,
-            platform_id="BV001",
+            platform_id="VID001",
             title="pending",
-            content_url="https://www.bilibili.com/video/BV001",
+            content_url="https://www.youtube.com/watch?v=VID001",
             published_at=datetime(2024, 6, 1, tzinfo=UTC),
             notified_at=None,
         )
@@ -484,7 +537,7 @@ class TestCrawlSourceNotifications:
 
         mock_crawler = AsyncMock()
         mock_crawler.fetch_latest_items = AsyncMock(
-            return_value=[make_video("BV001", title="pending")]
+            return_value=[make_video("VID001", title="pending")]
         )
 
         with (
@@ -497,11 +550,63 @@ class TestCrawlSourceNotifications:
 
         mock_send.assert_awaited()
         async with session_factory() as s:
-            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "BV001"))
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "VID001"))
         assert row.notified_at is not None
 
 
 class TestCrawlAllSources:
+    async def test_social_media_crawl_requests_every_twitter_source(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        twitter_one = make_source(user.id, SourceType.TWITTER)
+        twitter_one.external_id = "twitter-1"
+        twitter_two = make_source(user.id, SourceType.TWITTER)
+        twitter_two.external_id = "twitter-2"
+        youtube = make_source(user.id, SourceType.YOUTUBE)
+        youtube.external_id = "youtube-1"
+        db.add_all([twitter_one, twitter_two, youtube])
+        await db.commit()
+
+        requested_ids: list[str] = []
+
+        async def _fake_crawl_source(source):
+            requested_ids.append(source.external_id)
+            return 0
+
+        with (
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+            patch("app.services.scheduler.crawl_source", side_effect=_fake_crawl_source),
+        ):
+            await crawl_social_media_sources()
+
+        assert sorted(requested_ids) == ["twitter-1", "twitter-2"]
+
+    async def test_regular_crawl_excludes_social_media_sources(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        twitter = make_source(user.id, SourceType.TWITTER)
+        twitter.external_id = "twitter-1"
+        youtube = make_source(user.id, SourceType.YOUTUBE)
+        youtube.external_id = "youtube-1"
+        db.add_all([twitter, youtube])
+        await db.commit()
+
+        requested_ids: list[str] = []
+
+        async def _fake_crawl_source(source):
+            requested_ids.append(source.external_id)
+            return 0
+
+        with (
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+            patch("app.services.scheduler.crawl_source", side_effect=_fake_crawl_source),
+        ):
+            await crawl_regular_sources()
+
+        assert requested_ids == ["youtube-1"]
+
     async def test_failed_crawl_writes_failed_log(self, db, session_factory):
         user = make_user()
         db.add(user)

@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { ContentItem, ContentItemListResponse } from "../types";
 
 export const contentApi = {
-  list(platform?: "bilibili" | "youtube", cursor?: string | null, limit?: number) {
+  list(platform?: "youtube" | "twitter", cursor?: string | null, limit?: number) {
     const params = {
       ...(platform ? { platform } : {}),
       ...(cursor ? { cursor } : {}),

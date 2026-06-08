@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -120,6 +121,91 @@ class FeishuWebhookResponse(BaseModel):
     name: str
     webhook_url: str
     enabled: bool
+    created_at: datetime
+
+
+class MacroPoint(BaseModel):
+    date: date
+    value: float
+
+
+class MacroIndicatorResponse(BaseModel):
+    key: str
+    category: str
+    name: str
+    name_en: str
+    unit_label: str
+    decimals: int
+    source: str
+    explanation: str
+    latest: float
+    previous: float | None
+    change_abs: float | None
+    change_pct: float | None
+    updated_at: date
+    judgment: Literal["bullish", "neutral", "bearish"]
+    reason: str
+    high: float | None
+    low: float | None
+    high_note: str
+    low_note: str
+    zone: Literal["high", "normal", "low"]
+    forecast: float | None
+    forecast_label: str | None
+    forecast_source: str | None
+    series: list[MacroPoint]
+
+
+class MacroDashboardResponse(BaseModel):
+    indicators: list[MacroIndicatorResponse]
+
+
+class MacroRefreshResponse(BaseModel):
+    inserted: int
+
+
+class CalendarEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    event_key: str
+    kind: str
+    category: str
+    title: str
+    title_en: str
+    country: str
+    scheduled_at: datetime
+    all_day: bool
+    importance: int
+    impact_assets: str | None
+    previous: float | None
+    forecast: float | None
+    actual: float | None
+    value_unit: str | None
+    ticker: str | None
+    company_name: str | None
+    source: str
+
+
+class CalendarEventListResponse(BaseModel):
+    events: list[CalendarEventResponse]
+
+
+class CalendarRefreshResponse(BaseModel):
+    inserted: int
+
+
+class TrackedTickerCreate(BaseModel):
+    ticker: str
+    company_name: str | None = None
+
+
+class TrackedTickerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    ticker: str
+    company_name: str | None
     created_at: datetime
 
 

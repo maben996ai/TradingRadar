@@ -84,9 +84,9 @@ async def test_feishu_webhook(
         webhook_url=row.webhook_url,
         title="TradingRader 通知测试 - 飞书推送已就绪",
         creator_name="测试创作者",
-        platform="bilibili",
-        content_url="https://www.bilibili.com",
-        thumbnail_url="https://i0.hdslb.com/bfs/archive/d6e2b3ee64571c67ec534f39a3ab33380d2e0c4a.jpg",
+        platform="youtube",
+        content_url="https://www.youtube.com/watch?v=test",
+        thumbnail_url="https://i.ytimg.com/vi/test/hqdefault.jpg",
         is_new_creator=False,
     )
     return {"status": "ok"}

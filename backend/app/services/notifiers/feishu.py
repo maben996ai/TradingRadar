@@ -55,7 +55,7 @@ class FeishuNotifier(BaseNotifier):
         header_title = (
             f"🆕 新增信源：{creator_name}" if is_new_creator else f"📹 新视频：{creator_name}"
         )
-        platform_label = "Bilibili" if platform == "bilibili" else "YouTube"
+        platform_label = "X" if platform == "twitter" else "YouTube"
 
         image_key = await self._resolve_image_key(thumbnail_url)
 

@@ -158,7 +158,7 @@ class TestUploadImageFromUrl:
             "app.services.notifiers.feishu_client.httpx.AsyncClient",
             side_effect=fake_client_factory,
         ):
-            key = await client.upload_image_from_url("https://i0.hdslb.com/bfs/x.jpg")
+            key = await client.upload_image_from_url("https://i.ytimg.com/bfs/x.jpg")
 
         assert key == "img_v3_AAAA"
         # 至少应有 1 次 GET（下载封面） + 1 次 POST（上传到飞书）
@@ -166,8 +166,8 @@ class TestUploadImageFromUrl:
         assert methods.count("get") == 1
         assert methods.count("post") == 1
 
-    async def test_sends_referer_header_for_bilibili(self):
-        """下载时必须带 Referer 绕过 B 站防盗链。"""
+    async def test_sends_user_agent_header_when_downloading_image(self):
+        """下载封面时带通用 User-Agent。"""
         client = FeishuAppClient(app_id="cli_x", app_secret="sec")
         client._token = "cached-token"
         client._token_expires_at = time.time() + 10_000
@@ -194,11 +194,10 @@ class TestUploadImageFromUrl:
             "app.services.notifiers.feishu_client.httpx.AsyncClient",
             side_effect=fake_client_factory,
         ):
-            await client.upload_image_from_url("https://i0.hdslb.com/bfs/x.jpg")
+            await client.upload_image_from_url("https://i.ytimg.com/bfs/x.jpg")
 
         headers = captured_get_kwargs.get("headers", {})
-        assert "Referer" in headers
-        assert "bilibili" in headers["Referer"]
+        assert headers == {"User-Agent": "Mozilla/5.0"}
 
     async def test_uses_bearer_token_when_uploading(self):
         client = FeishuAppClient(app_id="cli_x", app_secret="sec")
@@ -228,7 +227,7 @@ class TestUploadImageFromUrl:
             "app.services.notifiers.feishu_client.httpx.AsyncClient",
             side_effect=fake_client_factory,
         ):
-            await client.upload_image_from_url("https://i0.hdslb.com/bfs/x.jpg")
+            await client.upload_image_from_url("https://i.ytimg.com/bfs/x.jpg")
 
         assert "im/v1/images" in captured_post_kwargs["url"]
         headers = captured_post_kwargs.get("headers", {})

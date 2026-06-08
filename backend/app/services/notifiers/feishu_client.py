@@ -58,8 +58,7 @@ class FeishuAppClient:
         if not self.configured:
             raise RuntimeError("Feishu app credentials are not configured")
 
-        # Bilibili 封面对 Referer 做防盗链校验
-        headers = {"Referer": "https://www.bilibili.com/", "User-Agent": "Mozilla/5.0"}
+        headers = {"User-Agent": "Mozilla/5.0"}
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
             img_resp = await client.get(image_url, headers=headers)
         img_resp.raise_for_status()

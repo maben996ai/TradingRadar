@@ -1,7 +1,6 @@
 export type ContentType = "video" | "article" | "news" | "market";
 
 export type SourceType =
-  | "bilibili"
   | "youtube"
   | "twitter"
   | "wechat_article"
@@ -45,4 +44,93 @@ export interface ContentItemListResponse {
   items: ContentItem[];
   next_cursor: string | null;
   has_more: boolean;
+}
+
+export type MacroJudgment = "bullish" | "neutral" | "bearish";
+
+export type MacroZone = "high" | "normal" | "low";
+
+export type MacroCategory =
+  | "rates"
+  | "inflation"
+  | "growth"
+  | "employment"
+  | "liquidity"
+  | "risk";
+
+export interface MacroPoint {
+  date: string;
+  value: number;
+}
+
+export interface MacroIndicator {
+  key: string;
+  category: MacroCategory;
+  name: string;
+  name_en: string;
+  unit_label: string;
+  decimals: number;
+  source: string;
+  explanation: string;
+  latest: number;
+  previous: number | null;
+  change_abs: number | null;
+  change_pct: number | null;
+  updated_at: string;
+  judgment: MacroJudgment;
+  reason: string;
+  high: number | null;
+  low: number | null;
+  high_note: string;
+  low_note: string;
+  zone: MacroZone;
+  forecast: number | null;
+  forecast_label: string | null;
+  forecast_source: string | null;
+  series: MacroPoint[];
+}
+
+export interface MacroDashboardResponse {
+  indicators: MacroIndicator[];
+}
+
+export type CalendarKind = "macro" | "earnings";
+
+export type CalendarCategory =
+  | "inflation"
+  | "employment"
+  | "rates"
+  | "growth"
+  | "earnings";
+
+export interface CalendarEvent {
+  id: string;
+  event_key: string;
+  kind: CalendarKind;
+  category: CalendarCategory;
+  title: string;
+  title_en: string;
+  country: string;
+  scheduled_at: string;
+  all_day: boolean;
+  importance: number;
+  impact_assets: string | null;
+  previous: number | null;
+  forecast: number | null;
+  actual: number | null;
+  value_unit: string | null;
+  ticker: string | null;
+  company_name: string | null;
+  source: string;
+}
+
+export interface CalendarEventListResponse {
+  events: CalendarEvent[];
+}
+
+export interface TrackedTicker {
+  id: string;
+  ticker: string;
+  company_name: string | null;
+  created_at: string;
 }

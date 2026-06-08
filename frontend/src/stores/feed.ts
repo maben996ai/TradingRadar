@@ -4,7 +4,8 @@ import { ref } from "vue";
 import { contentApi } from "../api/content";
 import type { ContentItem, ContentItemListResponse } from "../types";
 
-const API_PAGE_SIZE = 15;
+const API_PAGE_SIZE = 100;
+const MAX_INITIAL_PAGES = 50;
 
 function isContentItemListResponse(
   data: ContentItem[] | ContentItemListResponse,
@@ -46,7 +47,9 @@ export const useFeedStore = defineStore("feed", () => {
     }
   }
 
-  async function fetchVideos(initialPages = 3) {
+  async function fetchVideos(initialPages = MAX_INITIAL_PAGES) {
+    if (loading.value) return;
+
     loading.value = true;
     error.value = null;
     videos.value = [];
@@ -73,5 +76,14 @@ export const useFeedStore = defineStore("feed", () => {
     }
   }
 
-  return { videos, loading, loadingMore, error, hasMore, fetchVideos, fetchNextPage, ensureVideoCount };
+  return {
+    videos,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    fetchVideos,
+    fetchNextPage,
+    ensureVideoCount,
+  };
 });
