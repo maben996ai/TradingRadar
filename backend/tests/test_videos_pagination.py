@@ -15,10 +15,10 @@ from app.models.models import DataSource, SourceType, ContentItem
 async def _seed_data_source(db, user_id: str, suffix: str = "1") -> DataSource:
     source = DataSource(
         user_id=user_id,
-        source_type=SourceType.BILIBILI,
+        source_type=SourceType.YOUTUBE,
         external_id=f"uid_{suffix}",
         name=f"Creator {suffix}",
-        profile_url=f"https://space.bilibili.com/{suffix}",
+        profile_url=f"https://www.youtube.com/@creator-{suffix}",
     )
     db.add(source)
     await db.flush()
@@ -33,9 +33,9 @@ async def _seed_videos(
     for i in range(n):
         v = ContentItem(
             data_source_id=source.id,
-            platform_id=f"BV{source.external_id}_{i}",
+            platform_id=f"VID{source.external_id}_{i}",
             title=f"Video {i}",
-            content_url=f"https://www.bilibili.com/video/BV{i}",
+            content_url=f"https://www.youtube.com/watch?v=VID{i}",
             published_at=base + timedelta(hours=i),
         )
         db.add(v)
@@ -98,9 +98,9 @@ class TestVideosPaginatedResponse:
         source = await _seed_data_source(db, user_id)
         video = ContentItem(
             data_source_id=source.id,
-            platform_id="BV_duration",
+            platform_id="VID_duration",
             title="Video with duration",
-            content_url="https://www.bilibili.com/video/BV_duration",
+            content_url="https://www.youtube.com/watch?v=VID_duration",
             published_at=datetime(2024, 1, 1, tzinfo=UTC),
             raw_data={"length": "01:08:20"},
         )

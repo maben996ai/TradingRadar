@@ -22,8 +22,8 @@ REGISTER_PAYLOAD = {
 
 MOCK_SOURCE_INFO = SourceInfo(
     platform_id="123456",
-    name="测试UP主",
-    profile_url="https://space.bilibili.com/123456",
+    name="测试创作者",
+    profile_url="https://www.youtube.com/",
     avatar_url=None,
 )
 
@@ -37,13 +37,13 @@ async def _make_data_source(client, auth_headers, content_type: str = "video"):
     with (
         patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ),
         patch("app.api.data_sources._run_initial_crawl", new=AsyncMock()),
     ):
         resp = await client.post(
             "/api/data-sources",
-            json={"url": "https://space.bilibili.com/123456", "content_type": content_type},
+            json={"url": "https://www.youtube.com/", "content_type": content_type},
             headers=auth_headers,
         )
     return resp
@@ -229,13 +229,13 @@ class TestDataSourcesContentType:
                 "app.api.data_sources.resolve_source",
                 new=AsyncMock(
                     side_effect=[
-                        (SourceType.BILIBILI, MOCK_SOURCE_INFO),
+                        (SourceType.YOUTUBE, MOCK_SOURCE_INFO),
                         (
-                            SourceType.BILIBILI,
+                            SourceType.YOUTUBE,
                             SourceInfo(
                                 platform_id="999999",
-                                name="另一个UP主",
-                                profile_url="https://space.bilibili.com/999999",
+                                name="另一个创作者",
+                                profile_url="https://www.youtube.com/",
                                 avatar_url=None,
                             ),
                         ),
@@ -246,12 +246,12 @@ class TestDataSourcesContentType:
         ):
             await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/123456", "content_type": "video"},
+                json={"url": "https://www.youtube.com/", "content_type": "video"},
                 headers=auth_headers,
             )
             await client.post(
                 "/api/data-sources",
-                json={"url": "https://space.bilibili.com/999999", "content_type": "article"},
+                json={"url": "https://www.youtube.com/", "content_type": "article"},
                 headers=auth_headers,
             )
 
@@ -306,8 +306,8 @@ class TestFeishuNotifier:
                 webhook_url=WEBHOOK_URL,
                 title="测试视频标题",
                 creator_name="测试创作者",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
             )
 
         mock_client.post.assert_awaited_once()
@@ -323,8 +323,8 @@ class TestFeishuNotifier:
                 webhook_url="",
                 title="title",
                 creator_name="creator",
-                platform="bilibili",
-                content_url="https://www.bilibili.com",
+                platform="youtube",
+                content_url="https://www.youtube.com",
             )
             mock_client_cls.assert_not_called()
 
@@ -372,8 +372,8 @@ class TestFeishuNotifier:
                 webhook_url=WEBHOOK_URL,
                 title="新视频",
                 creator_name="老创作者",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
                 is_new_creator=False,
             )
 
@@ -392,12 +392,12 @@ class TestFeishuNotifier:
             )
             mock_client_cls.return_value = mock_client
 
-            content_url = "https://www.bilibili.com/video/BV123"
+            content_url = "https://www.youtube.com/watch?v=VID123"
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
+                creator_name="财经创作者",
+                platform="youtube",
                 content_url=content_url,
             )
 
@@ -423,10 +423,10 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
-                thumbnail_url="https://i0.hdslb.com/cover.jpg",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
+                thumbnail_url="https://i.ytimg.com/vi/test/hqdefault.jpg",
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])
@@ -441,7 +441,7 @@ class TestFeishuNotifier:
         sent_payload = {}
 
         async def fake_upload(url):
-            assert url == "https://i0.hdslb.com/cover.jpg"
+            assert url == "https://i.ytimg.com/vi/test/hqdefault.jpg"
             return "img_v3_0001"
 
         with (
@@ -461,10 +461,10 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
-                thumbnail_url="https://i0.hdslb.com/cover.jpg",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
+                thumbnail_url="https://i.ytimg.com/vi/test/hqdefault.jpg",
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])
@@ -492,9 +492,9 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
             )
 
         card = sent_payload.get("card", {})
@@ -517,9 +517,9 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
                 published_at=datetime(2026, 4, 19, 15, 30, 42, tzinfo=UTC),
             )
 
@@ -551,9 +551,9 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
                 published_at=datetime(2024, 1, 1, 10, 0, 0, tzinfo=UTC),
             )
 
@@ -584,9 +584,9 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])
@@ -624,10 +624,10 @@ class TestFeishuNotifier:
             await notifier.send_card(
                 webhook_url=WEBHOOK_URL,
                 title="港股分析",
-                creator_name="财经UP",
-                platform="bilibili",
-                content_url="https://www.bilibili.com/video/BV1",
-                thumbnail_url="https://i0.hdslb.com/cover.jpg",
+                creator_name="财经创作者",
+                platform="youtube",
+                content_url="https://www.youtube.com/watch?v=VID1",
+                thumbnail_url="https://i.ytimg.com/vi/test/hqdefault.jpg",
             )
 
         elements = sent_payload.get("card", {}).get("elements", [])

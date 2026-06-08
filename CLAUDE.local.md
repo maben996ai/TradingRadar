@@ -62,3 +62,60 @@
 - **完整正文**：`ContentItemResponse` 新增 `content_text`（从 `raw_data.text` 取完整推文，回退 `title`）；前端 timeline 用之。
 - **图片 lightbox**：推文配图点击打开全屏大图预览（点背景关闭），不再跳转 X；「查看原文」链接保留。
 - 清理：删除多个 unused i18n key 与 `FeedView`；新增板块/静态分类/`showMore` 等 i18n（中英）。
+
+## 进度（2026-06-08）：市场宏观看板模块（全栈，真实 FRED 数据）
+
+后端 192 测试通过、ruff 通过；前端 type-check + build 通过。已在本地真实跑通（Postgres + FRED）。
+
+**数据来源 / 选型**
+- 数据源：**FRED 真实 API**（圣路易斯联储，免费）。`FRED_API_KEY` 已写入根 `.env`，并加入 `.env.example` 与 `config.py`（`fred_api_key`）。
+- 趋势图：**手写内联 SVG 折线图**，无新依赖。判断：**规则引擎**（确定性，无 LLM）。
+
+**后端**
+- 模型：新增 `MacroObservation`（表 `macro_observations`，`indicator_key/date/value`，`UniqueConstraint(indicator_key,date)`）；指标元信息**不入库**，留代码注册表。
+- 迁移：`d4a9c1b73e52_add_macro_observations`，已在容器内 `alembic upgrade head`（顺带补上之前未应用的 `c7f0a9d2e4b1`）。
+- service：`services/macro/` — `indicators.py`（11 指标注册表 + `judge()`/`zone()`/`reason()`）、`fred_client.py`（httpx，跳过 `"."`，未配 key 抛 `FredApiError`）、`service.py`（`refresh_all` upsert + `build_dashboard` 算最新/前值/变化/判断/理由/zone + 完整 3Y 序列）。
+- API：`/api/macro/indicators`（看板）、`/api/macro/refresh`（手动刷新，无 key 返回 502）。schema 在 `schemas.py`。
+- 调度：`scheduler.py` 加 `refresh_macro_indicators` 每日 job + 首启空表自动拉取（已在 `_initial_macro_refresh` 用 key 守卫，避免测试触库）。
+- 指标集（映射 6 方向）：FEDFUNDS/DGS10（利率）、CPI/核心PCE 同比（通胀）、实际GDP（增长）、失业率/非农（就业）、M2/2s10s（流动性）、VIX/高收益债利差（风险）。
+
+**前端**
+- 视图 `MacroMarketView.vue`（`/macro-market`）：**单个面板 + 一个网格**铺全部指标卡（按方向排序，方向用彩色圆点徽标）；卡片含 最新值/前值/变化(红绿箭头)/更新时间/来源/判断徽标/一句话理由/基本解释。
+- **每卡独立**时间范围 `3M/6M/1Y/3Y`（默认 1Y，`ranges` 按 key 各存各的；非全局）。
+- 图表组件 `components/macro/MacroLineChart.vue`：平滑贝塞尔曲线 + 网格线 + 明亮渐变 + 端点/ hover 圆点 + tooltip + 极值标注 + **阈值虚线(橙高/蓝低)与标签**。
+- **预警阈值/极端说明/预测**：注册表加 `high/low/high_note/low_note/zone/forecast/forecast_label/forecast_source` 并贯通 schema→types。卡片图下方显示「预警区间 + 当前档位徽标(高位/正常/低位) + 命中那条极端影响高亮」；联邦基金利率给「预测」块（人工参考值，来源标 **CME FedWatch**，非实时）。
+- 导航：`AppShell.vue` 市场宏观**删除所有子项**，改为单一二级入口直达 `/macro-market`（清理 `macroItems`/`openMacro`）。
+- i18n：新增 `macro.*` 中英块（区间/判断/zone/预警/预测）+ `MessageKey`。样式集中加在 `styles.css` 末段。
+
+**待办 / 备注**
+- FedWatch 预测目前是注册表人工参考值；FRED 不含该数据，后续要实时需单独接 CME / 利率期货隐含概率。
+- 各 series 频率不一（日/月/季），趋势图按实际点绘制不插值；日频指标「前值」为上一交易日，短期噪声较大。
+- 临时验证账号：`macrocheck@example.com` / `password123`。
+
+## 进度（2026-06-09）：财经日历模块（全栈，可插拔 provider；财报接 FMP 真实）
+
+后端 208 测试通过、ruff 通过；前端 type-check + build 通过。已在本地真实跑通（Postgres + FRED + FMP）。
+
+**数据选型（已确认）**
+- 可插拔 provider：宏观 **精选发布日程 + FRED 回填**（过去 actual/previous 为 FRED 真实值；预期值需 TE 付费层，暂空）；财报 **FMP 真实**。
+- 实测 FMP key 仅 `stable/earnings`(-calendar) 可用，`economic-calendar` 付费受限 → 宏观不走 FMP。`.env` 加 `FMP_API_KEY`（已填）、`TRADING_ECONOMICS_API_KEY`（留空）；同步 `config.py` + `.env.example`。
+
+**后端**
+- 模型：`CalendarEvent`（宏观+财报统一，`event_key` 唯一去重，kind/category/scheduled_at(UTC)/importance/previous/forecast/actual/ticker/source 等）+ 用户级 `TrackedTicker`（`UniqueConstraint(user_id,ticker)`，镜像 `FeishuWebhook`）。
+- 迁移：`e5b7c3a91f24_add_calendar_events_and_tracked_tickers`，容器内已 `alembic upgrade head`。
+- `services/calendar/`：`events.py`（精选事件定义 17 项 + FOMC 2026 日程 + 默认重点公司）、`provider.py`（`CalendarProvider` 抽象；`SeedProvider` 按节奏生成 + FRED 回填；`TradingEconomicsProvider`；`FmpProvider` 用 `stable/earnings` 逐代码拉真实财报日+EPS）、`service.py`（`refresh_all` 按 key 选源、汇总「默认公司∪用户关注」symbols 传财报 provider、**删窗口内旧事件+重建**避免占位/改期残留；`list_events` 支持 分类/重要性/范围/kind/tracked_only 筛选）。
+- API `/api/calendar`：`/events`（多维筛选）、`/refresh`、`/tracked-tickers` CRUD。`main.py` 注册；`scheduler.py` 加 `refresh_calendar_events` 每日 job + 首启空表自动生成。
+
+**前端**
+- 视图 `CalendarView.vue`（`/calendar`，jin10 风格）：事件按所选**时区分组到日期**，列 时间/重要性★/事件/前值/预期/实际/影响资产/来源；财报行带「关注/已关注」切换。
+- 筛选：分类多选 chips、重要性、**北京↔美东切换**（前端按时区重排分组，查询用 UTC 边界+1天缓冲）、日期范围（今天/未来7天/未来30天 + 自定义）。`fmtValue` 字母单位(EPS)加空格。
+- 关注：`tracked-tickers` 增删 + 「仅看关注」过滤；关注代码全局汇总进刷新，下次该代码真实财报日由 FMP 拉入。
+- 导航：`AppShell.vue` 财经日历**删除 3 个子项**，改为单一入口 `/calendar`（清理 `calendarItems`）。
+- `api/calendar.ts`、`types`（`CalendarEvent`/`TrackedTicker`）、`i18n` `calendar.*` 中英 + `MessageKey`、`styles.css` 末段日历样式。
+
+**真实验证**：63 事件 = 54 宏观（通胀/就业/利率/增长，历史值 FRED 真实）+ 9 财报（FMP：NVDA 5/20 实际 EPS 1.87 vs 预期 1.76、AAPL 7/30 等真实日期+预期，来源 FMP）。
+
+**待办 / 备注**
+- 宏观「预期值」仍需 TE 付费层；`TradingEconomicsProvider` 已就位，配 `TRADING_ECONOMICS_API_KEY` 即切。
+- 精选发布**日期为待校准**（公开日程近似），actual/previous 为 FRED 真实。
+- FMP 仅对「默认公司 ∪ 已关注代码」拉取，避免日历被全市场财报淹没。

@@ -5,7 +5,10 @@ import { useAuthStore } from "../stores/auth";
 import ContentAnalysisView from "../views/ContentAnalysisView.vue";
 import ControlCenterView from "../views/ControlCenterView.vue";
 import DataSourcesView from "../views/DataSourcesView.vue";
+import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
+import CalendarView from "../views/CalendarView.vue";
+import MacroMarketView from "../views/MacroMarketView.vue";
 import PlatformFeedView from "../views/PlatformFeedView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import SourceFeedView from "../views/SourceFeedView.vue";
@@ -19,10 +22,12 @@ export const router = createRouter({
       path: "/",
       component: AppShell,
       children: [
-        { path: "", redirect: "/feed/twitter" },
+        { path: "", name: "home", component: HomeView },
         { path: "feed/:platform", name: "platform-feed", component: PlatformFeedView },
         { path: "source/:sourceId", name: "source-feed", component: SourceFeedView },
         { path: "sources", name: "data-sources", component: DataSourcesView },
+        { path: "macro-market", name: "macro-market", component: MacroMarketView },
+        { path: "calendar", name: "calendar", component: CalendarView },
         { path: "creators", redirect: "/sources" },
         { path: "author/:creatorId", redirect: (to) => `/source/${to.params.creatorId}` },
         { path: "content-analysis", name: "content-analysis", component: ContentAnalysisView },
@@ -44,6 +49,6 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.public && authStore.isAuthenticated) {
-    return { path: "/feed/twitter" };
+    return { path: "/" };
   }
 });

@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 43200
     youtube_api_key: str = ""
     twitterapi_io_api_key: str = ""
+    fred_api_key: str = ""
+    trading_economics_api_key: str = ""
+    fmp_api_key: str = ""
     nginx_conf_file: str = "nginx.http.conf"
     feishu_app_id: str = ""
     feishu_app_secret: str = ""

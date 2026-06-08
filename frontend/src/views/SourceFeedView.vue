@@ -30,24 +30,32 @@
               <span class="social-time">{{ formatPublishedAt(post.published_at) }}</span>
             </div>
             <p class="social-text" :class="{ collapsed: isCollapsed(post) }">{{ post.content_text }}</p>
-            <button
-              v-if="canCollapse(post)"
-              type="button"
-              class="social-more"
-              @click="toggleExpand(post.id)"
-            >
-              {{ expandedPosts.has(post.id) ? t("feed.showLess") : t("feed.showMore") }}
-            </button>
-            <img
+            <div
               v-if="post.thumbnail_url"
-              :src="post.thumbnail_url"
-              class="social-media"
-              :alt="post.content_text"
-              loading="lazy"
-              referrerpolicy="no-referrer"
-              @click="lightboxUrl = post.thumbnail_url"
-            />
-            <a :href="post.content_url" target="_blank" rel="noopener noreferrer" class="social-source-link">{{ t("feed.viewOriginal") }}</a>
+              class="social-media-frame"
+              :class="{ collapsed: isCollapsed(post) }"
+            >
+              <img
+                :src="post.thumbnail_url"
+                class="social-media"
+                :alt="post.content_text"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                @click="lightboxUrl = post.thumbnail_url"
+              />
+            </div>
+            <div class="social-actions">
+              <button
+                v-if="canCollapse(post)"
+                type="button"
+                class="social-more"
+                @click="toggleExpand(post.id)"
+              >
+                {{ expandedPosts.has(post.id) ? t("feed.showLess") : t("feed.showMore") }}
+              </button>
+              <span v-else></span>
+              <a :href="post.content_url" target="_blank" rel="noopener noreferrer" class="social-source-link">{{ t("feed.viewOriginal") }}</a>
+            </div>
           </div>
         </article>
       </div>
@@ -65,7 +73,6 @@
           <div class="video-thumb-sm">
             <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" loading="lazy" referrerpolicy="no-referrer" />
             <div v-else class="video-thumb-placeholder" />
-            <span class="platform-badge" :class="video.source_type">{{ video.source_type }}</span>
           </div>
           <div class="video-info-sm">
             <p class="video-title-sm">{{ video.title }}</p>
@@ -126,7 +133,7 @@ const isSocial = computed(() => sourceType.value === "twitter");
 const COLLAPSE_THRESHOLD = 140;
 const expandedPosts = reactive(new Set<string>());
 function canCollapse(item: ContentItem): boolean {
-  return (item.content_text?.length ?? 0) > COLLAPSE_THRESHOLD;
+  return (item.content_text?.length ?? 0) > COLLAPSE_THRESHOLD || Boolean(item.thumbnail_url);
 }
 function isCollapsed(item: ContentItem): boolean {
   return canCollapse(item) && !expandedPosts.has(item.id);

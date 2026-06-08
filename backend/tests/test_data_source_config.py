@@ -10,20 +10,20 @@ from app.services.crawlers.base import SourceInfo
 
 MOCK_SOURCE_INFO = SourceInfo(
     platform_id="123456",
-    name="测试UP主",
-    profile_url="https://space.bilibili.com/123456",
+    name="测试创作者",
+    profile_url="https://www.youtube.com/",
     avatar_url=None,
 )
 
 
 async def _create_data_source(client, auth_headers, extra: dict | None = None):
-    payload = {"url": "https://space.bilibili.com/123456"}
+    payload = {"url": "https://www.youtube.com/"}
     if extra:
         payload.update(extra)
     with (
         patch(
             "app.api.data_sources.resolve_source",
-            new=AsyncMock(return_value=(SourceType.BILIBILI, MOCK_SOURCE_INFO)),
+            new=AsyncMock(return_value=(SourceType.YOUTUBE, MOCK_SOURCE_INFO)),
         ),
         patch("app.api.data_sources._run_initial_crawl", new=AsyncMock()),
     ):

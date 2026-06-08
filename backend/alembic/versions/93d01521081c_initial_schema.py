@@ -62,7 +62,7 @@ def upgrade() -> None:
         "creators",
         sa.Column("id", sa.String(length=36), nullable=False),
         sa.Column("user_id", sa.String(length=36), nullable=False),
-        sa.Column("platform", sa.Enum("BILIBILI", "YOUTUBE", name="platform"), nullable=False),
+        sa.Column("platform", sa.Enum("YOUTUBE", name="platform"), nullable=False),
         sa.Column("platform_creator_id", sa.String(length=255), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("profile_url", sa.Text(), nullable=False),

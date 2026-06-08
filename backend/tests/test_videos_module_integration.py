@@ -21,10 +21,10 @@ async def _seed_user(db) -> User:
 async def _seed_data_source(db, user_id: str) -> DataSource:
     source = DataSource(
         user_id=user_id,
-        source_type=SourceType.BILIBILI,
+        source_type=SourceType.YOUTUBE,
         external_id="integration_uid",
         name="Integration Creator",
-        profile_url="https://space.bilibili.com/integration_uid",
+        profile_url="https://www.youtube.com/@integration-channel",
     )
     db.add(source)
     await db.flush()
@@ -37,9 +37,9 @@ async def _seed_videos(db, source: DataSource, count: int) -> None:
         db.add(
             ContentItem(
                 data_source_id=source.id,
-                platform_id=f"BV{index}",
+                platform_id=f"VID{index}",
                 title=f"Video {index}",
-                content_url=f"https://www.bilibili.com/video/BV{index}",
+                content_url=f"https://www.youtube.com/watch?v=VID{index}",
                 published_at=base + timedelta(hours=index),
             )
         )
@@ -75,7 +75,9 @@ class TestVideosModuleIntegration:
         user = await _seed_user(db)
 
         with pytest.raises(HTTPException) as exc_info:
-            await list_content_items(source_type=None, cursor="invalid", limit=3, current_user=user, db=db)
+            await list_content_items(
+                source_type=None, cursor="invalid", limit=3, current_user=user, db=db
+            )
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.detail == "Invalid cursor"

@@ -4,7 +4,7 @@
 
 ## 项目概览
 
-TradingRader 是一个面向港美股投资者的内容聚合平台，目标是将 Bilibili、YouTube 等财经创作者的更新集中到统一入口，并逐步补齐订阅管理、视频流、抓取日志和通知能力。后续还会逐步接入金融时讯、财报分析、交易信息等内容，并结合大模型能力提供金融投研分析能力。
+TradingRader 是一个面向港美股投资者的内容聚合平台，目标是将 X/Twitter、YouTube 等财经信源的更新集中到统一入口，并逐步补齐订阅管理、内容流、抓取日志和通知能力。后续还会逐步接入金融时讯、财报分析、交易信息等内容，并结合大模型能力提供金融投研分析能力。
 
 当前仓库已经完成一期的主要技术骨架：
 - 后端基于 FastAPI，已具备鉴权、核心 API、采集器、解析器、调度器和测试基础
@@ -90,7 +90,6 @@ ruff format .
 - `SECRET_KEY`
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `YOUTUBE_API_KEY`
-- `BILIBILI_SESSDATA`
 - `NGINX_CONF_FILE`
 
 注意：
