@@ -137,3 +137,29 @@ export interface TrackedTicker {
   company_name: string | null;
   created_at: string;
 }
+
+export interface FundamentalsSource {
+  name: string;
+}
+
+export interface FundamentalsArtifact {
+  source: string;
+  doc_type: string;
+  title: string;
+  file_path: string;
+  url: string | null;
+  period: string | null;
+  bytes_written: number;
+}
+
+export interface FundamentalsSourceResult {
+  source: string;
+  skipped: boolean;
+  message: string | null;
+  artifacts: FundamentalsArtifact[];
+}
+
+export interface FundamentalsDownloadResponse {
+  ticker: string;
+  results: FundamentalsSourceResult[];
+}

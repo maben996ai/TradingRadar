@@ -12,6 +12,7 @@ import MacroMarketView from "../views/MacroMarketView.vue";
 import PlatformFeedView from "../views/PlatformFeedView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import SourceFeedView from "../views/SourceFeedView.vue";
+import StockAnalysisView from "../views/StockAnalysisView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -31,6 +32,7 @@ export const router = createRouter({
         { path: "creators", redirect: "/sources" },
         { path: "author/:creatorId", redirect: (to) => `/source/${to.params.creatorId}` },
         { path: "content-analysis", name: "content-analysis", component: ContentAnalysisView },
+        { path: "stock-analysis", name: "stock-analysis", component: StockAnalysisView },
         { path: "control-center", name: "control-center", component: ControlCenterView },
       ],
     },

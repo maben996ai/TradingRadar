@@ -225,3 +225,38 @@ class CrawlLogResponse(BaseModel):
     message: str | None
     items_found: int
     created_at: datetime
+
+
+class FundamentalsSourceInfo(BaseModel):
+    name: str
+
+
+class FundamentalsDownloadRequest(BaseModel):
+    ticker: str
+    sources: list[str] | None = None
+
+
+class FundamentalsArtifactResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    source: str
+    doc_type: str
+    title: str
+    file_path: str
+    url: str | None = None
+    period: str | None = None
+    bytes_written: int
+
+
+class FundamentalsSourceResult(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    source: str
+    skipped: bool
+    message: str | None = None
+    artifacts: list[FundamentalsArtifactResponse]
+
+
+class FundamentalsDownloadResponse(BaseModel):
+    ticker: str
+    results: list[FundamentalsSourceResult]
