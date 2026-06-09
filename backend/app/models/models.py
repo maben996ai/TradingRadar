@@ -26,6 +26,7 @@ class Base(DeclarativeBase):
 class SourceType(StrEnum):
     YOUTUBE = "youtube"
     TWITTER = "twitter"
+    FINANCE_NEWS = "finance_news"
     WECHAT_ARTICLE = "wechat_article"
     WEBSITE = "website"
     RSS = "rss"

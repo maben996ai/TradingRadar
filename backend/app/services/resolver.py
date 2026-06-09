@@ -12,6 +12,11 @@ SOURCE_PATTERNS: dict[SourceType, tuple[str, ...]] = {
     SourceType.TWITTER: (
         r"https?://(?:www\.)?(?:twitter\.com|x\.com)/[A-Za-z0-9_]+/?(?:\?.*)?$",
     ),
+    SourceType.FINANCE_NEWS: (
+        r"jin10://flash",
+        r"https?://(?:www\.)?jin10\.com/?(?:\?.*)?$",
+        r"https?://flash\.jin10\.com/?(?:\?.*)?$",
+    ),
 }
 
 

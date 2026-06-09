@@ -387,6 +387,39 @@ a {
   font-weight: 700;
 }
 
+.nav-source-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  border: 1px solid var(--border-light);
+}
+
+.nav-source-logo-jin10 {
+  color: #7a4b00;
+  background: linear-gradient(135deg, #ffe08a 0%, #f5b829 100%);
+  border-color: rgba(245, 184, 41, 0.5);
+}
+
+.nav-source-logo-bloomberg {
+  color: #ffffff;
+  background: #111827;
+  border-color: #111827;
+}
+
+.nav-source-logo-reuters {
+  color: #ffffff;
+  background: #f97316;
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
 /* User area */
 .user-area {
   padding: 12px 16px;
@@ -956,6 +989,7 @@ a {
 }
 
 .platform-badge.youtube::before { background: var(--youtube); }
+.platform-badge.finance_news::before { background: var(--news); }
 
 .platform-badge.creator-inline-platform,
 .platform-badge.author-inline-platform {
@@ -1598,6 +1632,222 @@ a {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* 金十财经日历 */
+.jin10-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jin10-calendar-rangebar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.jin10-calendar-filter-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jin10-calendar-filter-label {
+  color: var(--text-3);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.jin10-calendar-custom-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: 0.78rem;
+}
+
+.jin10-calendar-date-input {
+  height: 32px;
+  min-width: 132px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-1);
+  padding: 0 9px;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.jin10-calendar-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-3);
+  font-size: 0.78rem;
+}
+
+.jin10-calendar-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jin10-calendar-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.jin10-calendar-legend .imp-high {
+  background: var(--danger);
+}
+
+.jin10-calendar-day {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.jin10-calendar-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.jin10-calendar-date {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--text-1);
+}
+
+.jin10-calendar-weekday,
+.jin10-calendar-count {
+  margin-left: 8px;
+  color: var(--text-3);
+  font-size: 0.78rem;
+}
+
+.jin10-calendar-table-wrap {
+  overflow-x: auto;
+}
+
+.jin10-calendar-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.jin10-calendar-table th {
+  text-align: left;
+  padding: 9px 12px;
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+  background: var(--bg-card);
+}
+
+.jin10-calendar-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-2);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.jin10-calendar-row:last-child td {
+  border-bottom: none;
+}
+
+.jin10-calendar-row:hover td {
+  background: var(--bg-hover);
+}
+
+.jin10-calendar-row.importance-5,
+.jin10-calendar-row.importance-4 {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+
+.jin10-calendar-row.importance-3 {
+  box-shadow: inset 3px 0 0 var(--warning);
+}
+
+.jin10-calendar-time {
+  font-family: var(--font-mono);
+  color: var(--text-1);
+  font-weight: 700;
+}
+
+.jin10-calendar-stars {
+  letter-spacing: 1px;
+  color: var(--text-3);
+}
+
+.jin10-calendar-stars.stars-5,
+.jin10-calendar-stars.stars-4 {
+  color: var(--danger);
+}
+
+.jin10-calendar-stars.stars-3 {
+  color: var(--warning);
+}
+
+.jin10-calendar-event-col {
+  min-width: 280px;
+  white-space: normal !important;
+}
+
+.jin10-calendar-event-name {
+  color: var(--text-1);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.jin10-calendar-actual {
+  color: var(--text-1);
+  font-weight: 700;
+}
+
+.jin10-calendar-affect {
+  display: inline-flex;
+  align-items: center;
+  min-width: 42px;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--bg-hover);
+  color: var(--text-3);
+}
+
+.jin10-calendar-affect.positive {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.jin10-calendar-affect.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
 }
 
 /* 社交媒体 timeline（folo 风格文本流） */

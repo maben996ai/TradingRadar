@@ -71,12 +71,13 @@ def _extract_duration_seconds(raw_data: dict | None) -> int | None:
 
 
 def _extract_full_text(raw_data: dict | None) -> str | None:
-    """提取完整正文（如推文原文），优先于截断的 title。"""
+    """提取完整正文（如推文/快讯原文），优先于截断的 title。"""
     if not raw_data:
         return None
-    text = raw_data.get("text")
-    if isinstance(text, str) and text.strip():
-        return text.strip()
+    for key in ("text", "content", "message", "introduction"):
+        text = raw_data.get(key)
+        if isinstance(text, str) and text.strip():
+            return text.strip()
     return None
 
 
@@ -142,9 +143,11 @@ async def list_content_items(
             thumbnail_url=v.thumbnail_url,
             content_url=v.content_url,
             published_at=v.published_at,
+            raw_data=v.raw_data,
             duration_seconds=_extract_duration_seconds(v.raw_data),
             data_source_name=v.data_source.name,
             data_source_avatar_url=v.data_source.avatar_url,
+            data_source_external_id=v.data_source.external_id,
             source_type=v.data_source.source_type,
         )
         for v in page

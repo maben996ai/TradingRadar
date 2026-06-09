@@ -18,9 +18,15 @@ from app.services.crawlers.base import CrawledItem
 from app.services.scheduler import (
     SchedulerService,
     crawl_all_sources,
+    crawl_finance_news_sources,
+    crawl_jin10_calendar_sources,
+    crawl_jin10_flash_sources,
+    crawl_jin10_news_sources,
     crawl_regular_sources,
     crawl_social_media_sources,
     crawl_source,
+    ensure_builtin_finance_news_sources,
+    prune_jin10_calendar_history,
     refresh_calendar_events,
     refresh_macro_indicators,
 )
@@ -97,6 +103,24 @@ class TestSchedulerService:
             "minutes": 15,
             "hour": None,
             "id": "crawl_social_media_sources",
+        }
+        assert jobs[crawl_jin10_flash_sources] == {
+            "trigger": "interval",
+            "minutes": 5,
+            "hour": None,
+            "id": "crawl_jin10_flash_sources",
+        }
+        assert jobs[crawl_jin10_news_sources] == {
+            "trigger": "interval",
+            "minutes": 60,
+            "hour": None,
+            "id": "crawl_jin10_news_sources",
+        }
+        assert jobs[crawl_jin10_calendar_sources] == {
+            "trigger": "cron",
+            "minutes": None,
+            "hour": 23,
+            "id": "crawl_jin10_calendar_sources",
         }
         # 宏观/日历改为每日固定 23:00 UTC 的 cron
         assert jobs[refresh_macro_indicators] == {
@@ -184,6 +208,139 @@ class TestCrawlSource:
             inserted = await crawl_source(source)
 
         assert inserted == 0
+
+    async def test_finance_news_crawl_uses_high_frequency_limit(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id, SourceType.FINANCE_NEWS)
+        source.external_id = "jin10_flash"
+        db.add(source)
+        await db.flush()
+        db.add(
+            ContentItem(
+                data_source_id=source.id,
+                platform_id="existing",
+                title="Existing",
+                content_url="https://www.jin10.com",
+                published_at=datetime(2024, 1, 1, tzinfo=UTC),
+            )
+        )
+        await db.commit()
+
+        mock_crawler = AsyncMock()
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[])
+
+        with (
+            patch("app.services.scheduler.crawler_registry") as mock_registry,
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+        ):
+            mock_registry.get.return_value = mock_crawler
+            await crawl_source(source)
+
+        mock_crawler.fetch_latest_items.assert_awaited_once_with("jin10_flash", limit=30)
+
+    async def test_jin10_calendar_crawl_uses_three_month_window_limit(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id, SourceType.FINANCE_NEWS)
+        source.external_id = "jin10_calendar"
+        db.add(source)
+        await db.commit()
+
+        mock_crawler = AsyncMock()
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[])
+
+        with (
+            patch("app.services.scheduler.crawler_registry") as mock_registry,
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+        ):
+            mock_registry.get.return_value = mock_crawler
+            await crawl_source(source)
+
+        mock_crawler.fetch_latest_items.assert_awaited_once_with("jin10_calendar", limit=1000)
+
+    async def test_prune_jin10_calendar_history_removes_items_older_than_one_year(
+        self, db, session_factory
+    ):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id, SourceType.FINANCE_NEWS)
+        source.external_id = "jin10_calendar"
+        db.add(source)
+        await db.flush()
+        old_item = ContentItem(
+            data_source_id=source.id,
+            platform_id="old",
+            title="Old Calendar",
+            content_url="https://www.jin10.com",
+            published_at=datetime.now(UTC) - timedelta(days=370),
+        )
+        recent_item = ContentItem(
+            data_source_id=source.id,
+            platform_id="recent",
+            title="Recent Calendar",
+            content_url="https://www.jin10.com",
+            published_at=datetime.now(UTC) - timedelta(days=30),
+        )
+        db.add_all([old_item, recent_item])
+        await db.commit()
+
+        with patch("app.services.scheduler.AsyncSessionLocal", session_factory):
+            deleted = await prune_jin10_calendar_history()
+
+        assert deleted == 1
+        async with session_factory() as s:
+            remaining = set(await s.scalars(select(ContentItem.platform_id)))
+        assert remaining == {"recent"}
+
+    async def test_jin10_calendar_existing_items_are_updated(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id, SourceType.FINANCE_NEWS)
+        source.external_id = "jin10_calendar"
+        db.add(source)
+        await db.flush()
+        db.add(
+            ContentItem(
+                data_source_id=source.id,
+                platform_id="calendar-1",
+                title="美国CPI",
+                content_url="https://www.jin10.com",
+                published_at=datetime(2026, 1, 1, tzinfo=UTC),
+                raw_data={"actual": ""},
+            )
+        )
+        await db.commit()
+
+        mock_crawler = AsyncMock()
+        mock_crawler.fetch_latest_items = AsyncMock(
+            return_value=[
+                CrawledItem(
+                    platform_id="calendar-1",
+                    title="美国CPI",
+                    content_url="https://www.jin10.com",
+                    published_at=datetime(2026, 1, 1, tzinfo=UTC),
+                    raw_data={"actual": "2.4%", "affect_txt": "利多"},
+                )
+            ]
+        )
+
+        with (
+            patch("app.services.scheduler.crawler_registry") as mock_registry,
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+        ):
+            mock_registry.get.return_value = mock_crawler
+            inserted = await crawl_source(source)
+
+        assert inserted == 0
+        async with session_factory() as s:
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "calendar-1"))
+        assert row.raw_data["actual"] == "2.4%"
+        assert row.raw_data["affect_txt"] == "利多"
 
     async def test_crawl_log_is_created_on_success(self, db, session_factory):
         user = make_user()
@@ -473,6 +630,39 @@ class TestCrawlSourceNotifications:
             row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "VID001"))
         assert row.notified_at is not None
 
+    async def test_jin10_flash_does_not_send_feishu_notification(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        source = make_source(user.id, SourceType.FINANCE_NEWS)
+        source.external_id = "jin10_flash"
+        db.add(source)
+        db.add(
+            FeishuWebhook(
+                user_id=user.id,
+                name="test",
+                webhook_url="https://open.feishu.cn/x",
+                enabled=True,
+            )
+        )
+        await db.commit()
+
+        mock_crawler = AsyncMock()
+        mock_crawler.fetch_latest_items = AsyncMock(return_value=[make_video("FLASH001")])
+
+        with (
+            patch("app.services.scheduler.crawler_registry") as mock_registry,
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+            patch("app.services.scheduler._notifier.send_card", new=AsyncMock()) as mock_send,
+        ):
+            mock_registry.get.return_value = mock_crawler
+            await crawl_source(source)
+
+        mock_send.assert_not_awaited()
+        async with session_factory() as s:
+            row = await s.scalar(select(ContentItem).where(ContentItem.platform_id == "FLASH001"))
+        assert row.notified_at is not None
+
     async def test_failed_notification_leaves_notified_at_null(self, db, session_factory):
         """webhook 失败 → notified_at 保持 None，下次 tick 可重试。"""
         user = make_user()
@@ -555,6 +745,28 @@ class TestCrawlSourceNotifications:
 
 
 class TestCrawlAllSources:
+    async def test_ensure_builtin_finance_news_sources_creates_three_per_user(self, db, session_factory):
+        user = make_user()
+        db.add(user)
+        await db.commit()
+
+        with patch("app.services.scheduler.AsyncSessionLocal", session_factory):
+            inserted = await ensure_builtin_finance_news_sources()
+            inserted_again = await ensure_builtin_finance_news_sources()
+
+        assert inserted == 3
+        assert inserted_again == 0
+        async with session_factory() as s:
+            sources = list(await s.scalars(
+                select(DataSource).where(DataSource.source_type == SourceType.FINANCE_NEWS)
+            ))
+        assert {source.external_id for source in sources} == {
+            "jin10_flash",
+            "jin10_news",
+            "jin10_calendar",
+        }
+        assert {source.content_type.value for source in sources} == {"news", "article", "market"}
+
     async def test_social_media_crawl_requests_every_twitter_source(self, db, session_factory):
         user = make_user()
         db.add(user)
@@ -590,7 +802,9 @@ class TestCrawlAllSources:
         twitter.external_id = "twitter-1"
         youtube = make_source(user.id, SourceType.YOUTUBE)
         youtube.external_id = "youtube-1"
-        db.add_all([twitter, youtube])
+        finance_news = make_source(user.id, SourceType.FINANCE_NEWS)
+        finance_news.external_id = "jin10_flash"
+        db.add_all([twitter, youtube, finance_news])
         await db.commit()
 
         requested_ids: list[str] = []
@@ -606,6 +820,32 @@ class TestCrawlAllSources:
             await crawl_regular_sources()
 
         assert requested_ids == ["youtube-1"]
+
+    async def test_finance_news_crawl_requests_all_builtin_finance_news_sources(
+        self, db, session_factory
+    ):
+        user = make_user()
+        db.add(user)
+        await db.flush()
+        for external_id in ("jin10_flash", "jin10_news", "jin10_calendar"):
+            source = make_source(user.id, SourceType.FINANCE_NEWS)
+            source.external_id = external_id
+            db.add(source)
+        await db.commit()
+
+        requested_ids: list[str] = []
+
+        async def _fake_crawl_source(source):
+            requested_ids.append(source.external_id)
+            return 0
+
+        with (
+            patch("app.services.scheduler.AsyncSessionLocal", session_factory),
+            patch("app.services.scheduler.crawl_source", side_effect=_fake_crawl_source),
+        ):
+            await crawl_finance_news_sources()
+
+        assert sorted(requested_ids) == ["jin10_calendar", "jin10_flash", "jin10_news"]
 
     async def test_failed_crawl_writes_failed_log(self, db, session_factory):
         user = make_user()

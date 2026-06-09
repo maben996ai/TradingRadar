@@ -5,8 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.core.security import create_access_token, get_password_hash, verify_password
-from app.models.models import User, UserSettings
+from app.models.models import ContentType, DataSource, SourceType, User, UserSettings
 from app.schemas.schemas import LoginRequest, TokenResponse, UserCreate, UserResponse
+from app.services.crawlers.jin10 import (
+    JIN10_CALENDAR_EXTERNAL_ID,
+    JIN10_FLASH_EXTERNAL_ID,
+    JIN10_NEWS_EXTERNAL_ID,
+    JIN10_PROFILE_URL,
+)
 
 router = APIRouter()
 
@@ -29,6 +35,37 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     await db.flush()
 
     db.add(UserSettings(user_id=user.id))
+    for source_def in (
+        {
+            "external_id": JIN10_FLASH_EXTERNAL_ID,
+            "name": "市场快讯",
+            "content_type": ContentType.NEWS,
+            "source_config": {"mcp_tool": "list_flash", "jin10_section": "flash"},
+        },
+        {
+            "external_id": JIN10_NEWS_EXTERNAL_ID,
+            "name": "财经资讯",
+            "content_type": ContentType.ARTICLE,
+            "source_config": {"mcp_tool": "list_news", "jin10_section": "news"},
+        },
+        {
+            "external_id": JIN10_CALENDAR_EXTERNAL_ID,
+            "name": "财经日历",
+            "content_type": ContentType.MARKET,
+            "source_config": {"mcp_tool": "list_calendar", "jin10_section": "calendar"},
+        },
+    ):
+        db.add(
+            DataSource(
+                user_id=user.id,
+                source_type=SourceType.FINANCE_NEWS,
+                external_id=source_def["external_id"],
+                name=source_def["name"],
+                profile_url=JIN10_PROFILE_URL,
+                content_type=source_def["content_type"],
+                source_config=source_def["source_config"],
+            )
+        )
     await db.commit()
     await db.refresh(user)
     return user

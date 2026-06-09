@@ -104,7 +104,14 @@ class TestDataSourcesAPI:
     async def test_list_data_sources_empty_for_new_user(self, client, auth_headers):
         resp = await client.get("/api/data-sources", headers=auth_headers)
         assert resp.status_code == 200
-        assert resp.json() == []
+        body = resp.json()
+        assert len(body) == 3
+        assert {item["external_id"] for item in body} == {
+            "jin10_flash",
+            "jin10_news",
+            "jin10_calendar",
+        }
+        assert all(item["source_type"] == "finance_news" for item in body)
 
     async def test_create_data_source_returns_201(self, client, auth_headers):
         with patch(

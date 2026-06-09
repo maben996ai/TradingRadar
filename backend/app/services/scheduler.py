@@ -1,14 +1,15 @@
 import asyncio
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal
 from app.models.models import (
     ContentItem,
+    ContentType,
     CrawlLogStatus,
     DataSource,
     CrawlLog,
@@ -16,8 +17,15 @@ from app.models.models import (
     FeishuWebhook,
     MacroObservation,
     SourceType,
+    User,
 )
 from app.services.calendar.service import refresh_all as refresh_calendar_all
+from app.services.crawlers.jin10 import (
+    JIN10_CALENDAR_EXTERNAL_ID,
+    JIN10_FLASH_EXTERNAL_ID,
+    JIN10_NEWS_EXTERNAL_ID,
+    JIN10_PROFILE_URL,
+)
 from app.services.crawlers.registry import crawler_registry
 from app.services.macro.service import refresh_all as refresh_macro_all
 from app.services.notifiers.feishu import FeishuNotifier
@@ -28,7 +36,14 @@ _notifier = FeishuNotifier()
 
 REGULAR_CRAWL_INTERVAL_MINUTES = 30
 SOCIAL_MEDIA_CRAWL_INTERVAL_MINUTES = 15
+JIN10_FLASH_CRAWL_INTERVAL_MINUTES = 5
+JIN10_NEWS_CRAWL_INTERVAL_MINUTES = 60
 SOCIAL_MEDIA_SOURCE_TYPES = (SourceType.TWITTER,)
+FINANCE_NEWS_SOURCE_TYPES = (SourceType.FINANCE_NEWS,)
+JIN10_FLASH_SOURCE_IDS = (JIN10_FLASH_EXTERNAL_ID,)
+JIN10_NEWS_SOURCE_IDS = (JIN10_NEWS_EXTERNAL_ID,)
+JIN10_CALENDAR_SOURCE_IDS = (JIN10_CALENDAR_EXTERNAL_ID,)
+FEISHU_NOTIFICATION_DISABLED_EXTERNAL_IDS = JIN10_FLASH_SOURCE_IDS
 # 宏观/日历每天一次，固定在美股收盘+财报落定后：23:00 UTC ≈ 北京 07:00
 DAILY_REFRESH_UTC_HOUR = 23
 
@@ -60,6 +75,35 @@ class SchedulerService:
             misfire_grace_time=300,
         )
         self.scheduler.add_job(
+            crawl_jin10_flash_sources,
+            "interval",
+            minutes=JIN10_FLASH_CRAWL_INTERVAL_MINUTES,
+            id="crawl_jin10_flash_sources",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=300,
+        )
+        self.scheduler.add_job(
+            crawl_jin10_news_sources,
+            "interval",
+            minutes=JIN10_NEWS_CRAWL_INTERVAL_MINUTES,
+            id="crawl_jin10_news_sources",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=300,
+        )
+        self.scheduler.add_job(
+            crawl_jin10_calendar_sources,
+            "cron",
+            hour=DAILY_REFRESH_UTC_HOUR,
+            minute=0,
+            timezone="UTC",
+            id="crawl_jin10_calendar_sources",
+            replace_existing=True,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
+        self.scheduler.add_job(
             refresh_macro_indicators,
             "cron",
             hour=DAILY_REFRESH_UTC_HOUR,
@@ -84,6 +128,7 @@ class SchedulerService:
         self.scheduler.start()
         self._started = True
         # 首启若数据为空则立即生成一次（不阻塞启动）
+        asyncio.create_task(_initial_finance_news_refresh())
         asyncio.create_task(_initial_macro_refresh())
         asyncio.create_task(_initial_calendar_refresh())
 
@@ -96,6 +141,30 @@ class SchedulerService:
 
 FIRST_CRAWL_LIMIT = 30
 INCREMENTAL_CRAWL_LIMIT = 2
+FINANCE_NEWS_CRAWL_LIMIT = 30
+JIN10_CALENDAR_CRAWL_LIMIT = 1000
+JIN10_CALENDAR_HISTORY_RETENTION = timedelta(days=365)
+
+JIN10_BUILTIN_SOURCES = (
+    {
+        "external_id": JIN10_FLASH_EXTERNAL_ID,
+        "name": "市场快讯",
+        "content_type": ContentType.NEWS,
+        "source_config": {"mcp_tool": "list_flash", "jin10_section": "flash"},
+    },
+    {
+        "external_id": JIN10_NEWS_EXTERNAL_ID,
+        "name": "财经资讯",
+        "content_type": ContentType.ARTICLE,
+        "source_config": {"mcp_tool": "list_news", "jin10_section": "news"},
+    },
+    {
+        "external_id": JIN10_CALENDAR_EXTERNAL_ID,
+        "name": "财经日历",
+        "content_type": ContentType.MARKET,
+        "source_config": {"mcp_tool": "list_calendar", "jin10_section": "calendar"},
+    },
+)
 
 
 async def refresh_macro_indicators() -> None:
@@ -136,6 +205,48 @@ async def _initial_calendar_refresh() -> None:
         await refresh_calendar_events()
 
 
+async def ensure_builtin_finance_news_sources() -> int:
+    """为每个用户准备内置金十数据金融时讯信源。"""
+    async with AsyncSessionLocal() as db:
+        users = list(await db.scalars(select(User)))
+        inserted = 0
+        for user in users:
+            for source_def in JIN10_BUILTIN_SOURCES:
+                existing = await db.scalar(
+                    select(DataSource).where(
+                        DataSource.user_id == user.id,
+                        DataSource.source_type == SourceType.FINANCE_NEWS,
+                        DataSource.external_id == source_def["external_id"],
+                    )
+                )
+                if existing is not None:
+                    existing.name = source_def["name"]
+                    existing.profile_url = JIN10_PROFILE_URL
+                    existing.content_type = source_def["content_type"]
+                    existing.source_config = source_def["source_config"]
+                    continue
+                db.add(
+                    DataSource(
+                        user_id=user.id,
+                        source_type=SourceType.FINANCE_NEWS,
+                        external_id=source_def["external_id"],
+                        name=source_def["name"],
+                        profile_url=JIN10_PROFILE_URL,
+                        content_type=source_def["content_type"],
+                        source_config=source_def["source_config"],
+                    )
+                )
+                inserted += 1
+        await db.commit()
+        return inserted
+
+
+async def _initial_finance_news_refresh() -> None:
+    await crawl_jin10_flash_sources()
+    await crawl_jin10_news_sources()
+    await crawl_jin10_calendar_sources()
+
+
 async def _get_webhook_urls(user_id: str) -> list[str]:
     async with AsyncSessionLocal() as db:
         rows = await db.scalars(
@@ -144,6 +255,13 @@ async def _get_webhook_urls(user_id: str) -> list[str]:
             )
         )
         return [r.webhook_url for r in rows]
+
+
+def _should_send_feishu_notifications(source: DataSource) -> bool:
+    return (
+        source.notifications_enabled
+        and source.external_id not in FEISHU_NOTIFICATION_DISABLED_EXTERNAL_IDS
+    )
 
 
 async def crawl_source(source: DataSource) -> int:
@@ -157,7 +275,12 @@ async def crawl_source(source: DataSource) -> int:
         )
 
     is_first_crawl = (existing_count or 0) == 0
-    limit = FIRST_CRAWL_LIMIT if is_first_crawl else INCREMENTAL_CRAWL_LIMIT
+    if source.external_id in JIN10_CALENDAR_SOURCE_IDS:
+        limit = JIN10_CALENDAR_CRAWL_LIMIT
+    elif source.source_type in FINANCE_NEWS_SOURCE_TYPES:
+        limit = FINANCE_NEWS_CRAWL_LIMIT
+    else:
+        limit = FIRST_CRAWL_LIMIT if is_first_crawl else INCREMENTAL_CRAWL_LIMIT
 
     items = await crawler.fetch_latest_items(source.external_id, limit=limit)
 
@@ -188,10 +311,30 @@ async def crawl_source(source: DataSource) -> int:
                 )
             )
         )
+        existing_items_by_platform_id: dict[str, ContentItem] = {}
+        if source.external_id in JIN10_CALENDAR_SOURCE_IDS and existing_ids:
+            existing_rows = list(
+                await db.scalars(
+                    select(ContentItem).where(
+                        ContentItem.data_source_id == source.id,
+                        ContentItem.platform_id.in_(existing_ids),
+                    )
+                )
+            )
+            existing_items_by_platform_id = {row.platform_id: row for row in existing_rows}
 
         new_items: list[ContentItem] = []
+        notifications_enabled = _should_send_feishu_notifications(source)
+        now = datetime.now(UTC)
         for item in items:
             if item.platform_id in existing_ids:
+                existing_item = existing_items_by_platform_id.get(item.platform_id)
+                if existing_item is not None:
+                    existing_item.title = item.title
+                    existing_item.thumbnail_url = item.thumbnail_url
+                    existing_item.content_url = item.content_url
+                    existing_item.published_at = item.published_at
+                    existing_item.raw_data = item.raw_data
                 continue
             new_item = ContentItem(
                 data_source_id=source.id,
@@ -201,6 +344,7 @@ async def crawl_source(source: DataSource) -> int:
                 content_url=item.content_url,
                 published_at=item.published_at,
                 raw_data=item.raw_data,
+                notified_at=None if notifications_enabled else now,
             )
             db.add(new_item)
             new_items.append(new_item)
@@ -208,7 +352,6 @@ async def crawl_source(source: DataSource) -> int:
         # 首次抓取：除最新 1 条外，全部预标为已通知，避免"升级即爆量"
         if is_first_crawl and len(new_items) > 1:
             sorted_new = sorted(new_items, key=lambda v: v.published_at, reverse=True)
-            now = datetime.now(UTC)
             for v in sorted_new[1:]:
                 v.notified_at = now
 
@@ -229,7 +372,7 @@ async def crawl_source(source: DataSource) -> int:
         await db.commit()
 
     # 通知阶段：扫描 notified_at IS NULL 的待发内容，任一失败则保持 None 供下次重试
-    if not source.notifications_enabled:
+    if not _should_send_feishu_notifications(source):
         return inserted_count
 
     webhook_urls = await _get_webhook_urls(source.user_id)
@@ -308,7 +451,42 @@ async def _crawl_sources(source_types: tuple[SourceType, ...]) -> None:
         await db.commit()
 
 
+async def _crawl_sources_by_external_ids(external_ids: tuple[str, ...]) -> None:
+    if not external_ids:
+        return
+
+    await ensure_builtin_finance_news_sources()
+    async with AsyncSessionLocal() as db:
+        sources = list(
+            await db.scalars(
+                select(DataSource).where(
+                    DataSource.source_type == SourceType.FINANCE_NEWS,
+                    DataSource.external_id.in_(external_ids),
+                )
+            )
+        )
+
+    results = await asyncio.gather(*[crawl_source(s) for s in sources], return_exceptions=True)
+
+    failed = [(sources[i], exc) for i, exc in enumerate(results) if isinstance(exc, Exception)]
+    if not failed:
+        return
+
+    async with AsyncSessionLocal() as db:
+        for source, exc in failed:
+            db.add(
+                CrawlLog(
+                    data_source_id=source.id,
+                    status=CrawlLogStatus.FAILED,
+                    message=str(exc),
+                    items_found=0,
+                )
+            )
+        await db.commit()
+
+
 async def crawl_all_sources() -> None:
+    await ensure_builtin_finance_news_sources()
     await _crawl_sources(crawler_registry.supported_types())
 
 
@@ -316,13 +494,55 @@ async def crawl_regular_sources() -> None:
     source_types = tuple(
         source_type
         for source_type in crawler_registry.supported_types()
-        if source_type not in SOCIAL_MEDIA_SOURCE_TYPES
+        if source_type not in SOCIAL_MEDIA_SOURCE_TYPES + FINANCE_NEWS_SOURCE_TYPES
     )
     await _crawl_sources(source_types)
 
 
 async def crawl_social_media_sources() -> None:
     await _crawl_sources(SOCIAL_MEDIA_SOURCE_TYPES)
+
+
+async def crawl_jin10_flash_sources() -> None:
+    await _crawl_sources_by_external_ids(JIN10_FLASH_SOURCE_IDS)
+
+
+async def crawl_jin10_news_sources() -> None:
+    await _crawl_sources_by_external_ids(JIN10_NEWS_SOURCE_IDS)
+
+
+async def crawl_jin10_calendar_sources() -> None:
+    await _crawl_sources_by_external_ids(JIN10_CALENDAR_SOURCE_IDS)
+    await prune_jin10_calendar_history()
+
+
+async def prune_jin10_calendar_history() -> int:
+    cutoff = datetime.now(UTC) - JIN10_CALENDAR_HISTORY_RETENTION
+    async with AsyncSessionLocal() as db:
+        source_ids = list(
+            await db.scalars(
+                select(DataSource.id).where(
+                    DataSource.source_type == SourceType.FINANCE_NEWS,
+                    DataSource.external_id.in_(JIN10_CALENDAR_SOURCE_IDS),
+                )
+            )
+        )
+        if not source_ids:
+            return 0
+        result = await db.execute(
+            delete(ContentItem).where(
+                ContentItem.data_source_id.in_(source_ids),
+                ContentItem.published_at < cutoff,
+            )
+        )
+        await db.commit()
+        return result.rowcount or 0
+
+
+async def crawl_finance_news_sources() -> None:
+    await crawl_jin10_flash_sources()
+    await crawl_jin10_news_sources()
+    await crawl_jin10_calendar_sources()
 
 
 scheduler_service = SchedulerService()

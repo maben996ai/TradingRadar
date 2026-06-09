@@ -100,6 +100,7 @@ const messages = {
       comingSoon: "该板块即将上线",
       platformYoutube: "YouTube",
       platformTwitter: "X",
+      builtinFinanceNews: "金十数据为系统内置信源，每 10 分钟自动同步最新快讯。",
       platformWechat: "公众号",
       platformWebsite: "网站",
     },
@@ -283,6 +284,7 @@ const messages = {
       comingSoon: "This section is coming soon",
       platformYoutube: "YouTube",
       platformTwitter: "X",
+      builtinFinanceNews: "Jin10 is a built-in source and syncs latest flashes every 10 minutes.",
       platformWechat: "WeChat",
       platformWebsite: "Website",
     },
@@ -461,6 +463,7 @@ type MessageKey =
   | "dataSources.comingSoon"
   | "dataSources.platformYoutube"
   | "dataSources.platformTwitter"
+  | "dataSources.builtinFinanceNews"
   | "dataSources.platformWechat"
   | "dataSources.platformWebsite"
   | "contentAnalysis.eyebrow"

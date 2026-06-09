@@ -3,6 +3,7 @@ export type ContentType = "video" | "article" | "news" | "market";
 export type SourceType =
   | "youtube"
   | "twitter"
+  | "finance_news"
   | "wechat_article"
   | "website"
   | "rss"
@@ -35,9 +36,11 @@ export interface ContentItem {
   thumbnail_url?: string | null;
   content_url: string;
   published_at: string;
+  raw_data?: Record<string, unknown> | null;
   duration_seconds?: number | null;
   data_source_name: string;
   data_source_avatar_url?: string | null;
+  data_source_external_id: string;
 }
 
 export interface ContentItemListResponse {

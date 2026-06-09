@@ -14,6 +14,9 @@ def test_settings_default_types():
     assert isinstance(s.access_token_expire_minutes, int)
     assert isinstance(s.youtube_api_key, str)
     assert isinstance(s.twitterapi_io_api_key, str)
+    assert isinstance(s.jin10_mcp_server_url, str)
+    assert isinstance(s.jin10_mcp_bearer_token, str)
+    assert isinstance(s.jin10_mcp_protocol_version, str)
     assert isinstance(s.dev_account_email, str)
     assert isinstance(s.dev_account_display_name, str)
     assert isinstance(s.dev_account_password, str)
@@ -44,11 +47,13 @@ def test_settings_reads_from_environment(monkeypatch):
 def test_settings_environment_overrides_default(monkeypatch):
     monkeypatch.setenv("YOUTUBE_API_KEY", "my-youtube-key")
     monkeypatch.setenv("TWITTERAPI_IO_API_KEY", "my-twitterapi-key")
+    monkeypatch.setenv("JIN10_MCP_BEARER_TOKEN", "my-jin10-token")
 
     s = Settings(_env_file=None)
 
     assert s.youtube_api_key == "my-youtube-key"
     assert s.twitterapi_io_api_key == "my-twitterapi-key"
+    assert s.jin10_mcp_bearer_token == "my-jin10-token"
 
 
 def test_get_settings_returns_same_instance():

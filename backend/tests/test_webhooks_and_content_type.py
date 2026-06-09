@@ -221,7 +221,9 @@ class TestDataSourcesContentType:
         await _make_data_source(client, auth_headers, content_type="video")
         resp = await client.get("/api/data-sources?content_type=article", headers=auth_headers)
         assert resp.status_code == 200
-        assert resp.json() == []
+        body = resp.json()
+        assert len(body) == 1
+        assert body[0]["external_id"] == "jin10_news"
 
     async def test_list_without_filter_returns_all(self, client, auth_headers):
         with (
@@ -257,7 +259,10 @@ class TestDataSourcesContentType:
 
         resp = await client.get("/api/data-sources", headers=auth_headers)
         assert resp.status_code == 200
-        assert len(resp.json()) == 2
+        body = resp.json()
+        assert len(body) == 5
+        assert sum(1 for item in body if item["source_type"] == "youtube") == 2
+        assert sum(1 for item in body if item["source_type"] == "finance_news") == 3
 
     async def test_patch_content_type(self, client, auth_headers):
         create_resp = await _make_data_source(client, auth_headers, content_type="video")

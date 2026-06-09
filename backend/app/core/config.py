@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 43200
     youtube_api_key: str = ""
     twitterapi_io_api_key: str = ""
+    jin10_mcp_server_url: str = "https://mcp.jin10.com/mcp"
+    jin10_mcp_bearer_token: str = ""
+    jin10_mcp_protocol_version: str = "2025-11-25"
     fred_api_key: str = ""
     trading_economics_api_key: str = ""
     fmp_api_key: str = ""

@@ -1,10 +1,10 @@
 import { apiClient } from "./client";
-import type { ContentItem, ContentItemListResponse } from "../types";
+import type { ContentItem, ContentItemListResponse, SourceType } from "../types";
 
 export const contentApi = {
-  list(platform?: "youtube" | "twitter", cursor?: string | null, limit?: number) {
+  list(sourceType?: SourceType, cursor?: string | null, limit?: number) {
     const params = {
-      ...(platform ? { platform } : {}),
+      ...(sourceType ? { source_type: sourceType } : {}),
       ...(cursor ? { cursor } : {}),
       ...(limit ? { limit } : {}),
     };
