@@ -42,7 +42,7 @@ class Jin10MCPClient:
             {
                 "protocolVersion": self.protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "TradingRader", "version": "0.1.0"},
+                "clientInfo": {"name": "TradingRadar", "version": "0.1.0"},
             },
         )
         await self._notification("notifications/initialized")

@@ -73,7 +73,7 @@ class TestSecEdgarAdapter:
     async def test_downloads_target_forms_to_disk(self, tmp_path):
         _mock_sec_routes()
         adapter = SecEdgarAdapter(
-            user_agent="TradingRader test@example.com",
+            user_agent="TradingRadar test@example.com",
             forms=["10-K", "10-Q", "8-K", "13F-HR"],
             limit_per_form=1,
         )
@@ -101,7 +101,7 @@ class TestSecEdgarAdapter:
     async def test_archive_url_uses_padded_cik_and_dashless_accession(self, tmp_path):
         _mock_sec_routes()
         adapter = SecEdgarAdapter(
-            user_agent="TradingRader test@example.com",
+            user_agent="TradingRadar test@example.com",
             forms=["10-K"],
             limit_per_form=1,
         )

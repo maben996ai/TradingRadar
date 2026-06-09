@@ -1,4 +1,4 @@
-name: trendradar
+name: tradingradar
 
 services:
   nginx:

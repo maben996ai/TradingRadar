@@ -3,7 +3,7 @@ from app.core.config import Settings, get_settings
 
 def test_settings_has_default_app_name():
     s = Settings(_env_file=None)
-    assert s.app_name == "TradingRader"
+    assert s.app_name == "TradingRadar"
 
 
 def test_settings_default_types():

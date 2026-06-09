@@ -29,7 +29,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="TradingRader API",
+    title="TradingRadar API",
     description="Financial data source feed aggregation service",
     version="0.1.0",
     lifespan=lifespan,

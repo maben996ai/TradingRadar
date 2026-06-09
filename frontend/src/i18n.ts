@@ -2,7 +2,7 @@ import { computed, ref, watch } from "vue";
 
 export type Locale = "zh-CN" | "en";
 
-const LOCALE_KEY = "trendradar_locale";
+const LOCALE_KEY = "tradingradar_locale";
 const defaultLocale: Locale = "zh-CN";
 
 const messages = {
@@ -185,7 +185,7 @@ const messages = {
     },
     auth: {
       loginEyebrow: "欢迎回来",
-      loginTitle: "登录 TradingRader",
+      loginTitle: "登录 TradingRadar",
       registerEyebrow: "新建工作区",
       registerTitle: "创建你的账号",
       email: "邮箱",
@@ -387,7 +387,7 @@ const messages = {
     },
     auth: {
       loginEyebrow: "Welcome back",
-      loginTitle: "Sign in to TradingRader",
+      loginTitle: "Sign in to TradingRadar",
       registerEyebrow: "New workspace",
       registerTitle: "Create your account",
       email: "Email",

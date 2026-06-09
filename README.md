@@ -1,6 +1,6 @@
-# TradingRader
+# TradingRadar
 
-TradingRader 是一个面向港美股投资者的金融内容聚合工具，用于把金十数据金融时讯、X/Twitter、YouTube 等信源的更新集中到统一的信息流里，并围绕订阅管理、内容抓取、通知和后续投研分析能力持续迭代。
+TradingRadar 是一个面向港美股投资者的金融内容聚合工具，用于把金十数据金融时讯、X/Twitter、YouTube 等信源的更新集中到统一的信息流里，并围绕订阅管理、内容抓取、通知和后续投研分析能力持续迭代。
 
 当前仓库包含一个 FastAPI 后端、一个 Vue 3 前端，以及用于本地和生产部署的 Docker Compose / Nginx 配置。
 
