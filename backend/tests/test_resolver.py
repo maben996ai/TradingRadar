@@ -20,6 +20,12 @@ MOCK_TWITTER_SOURCE = SourceInfo(
     avatar_url=None,
 )
 
+MOCK_JIN10_SOURCE = SourceInfo(
+    platform_id="jin10_flash",
+    name="金十数据",
+    profile_url="https://www.jin10.com",
+)
+
 
 def make_mock_crawler(source_info: SourceInfo) -> AsyncMock:
     crawler = AsyncMock()
@@ -61,6 +67,15 @@ class TestResolverPatternMatching:
         ):
             source_type, _ = await resolve_source(url)
         assert source_type == SourceType.TWITTER
+
+    @pytest.mark.parametrize("url", ["jin10://flash", "https://www.jin10.com", "https://flash.jin10.com"])
+    async def test_jin10_urls_resolve_to_finance_news_source_type(self, url):
+        with patch(
+            "app.services.resolver.crawler_registry.get",
+            return_value=make_mock_crawler(MOCK_JIN10_SOURCE),
+        ):
+            source_type, _ = await resolve_source(url)
+        assert source_type == SourceType.FINANCE_NEWS
 
     async def test_unsupported_url_raises_value_error(self):
         with pytest.raises(ValueError, match="Unsupported source URL"):

@@ -24,17 +24,24 @@
             </button>
           </div>
 
-          <!-- 金融时讯（静态占位分类） -->
-          <div class="nav-item expandable" @click="toggleExpand('financeNews')">
+          <!-- 金融时讯（内置金十数据） -->
+          <div class="nav-item expandable" @click="openPlatform('financeNews', '/feed/finance_news')">
             <span class="nav-item-toggle" :class="{ expanded: expanded.financeNews }" @click.stop="toggleExpand('financeNews')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.financeNews") }}</span>          </div>
+            <span class="nav-item-label">{{ t("nav.financeNews") }}</span>
+          </div>
           <div class="nav-children" :class="{ expanded: expanded.financeNews }">
-            <div v-for="item in financeNewsItems" :key="item" class="nav-child">
-              <span class="nav-item-label">{{ item }}</span>
-            </div>
+            <RouterLink
+              v-for="item in financeNewsTabs"
+              :key="item.key"
+              :to="item.path"
+              class="nav-child"
+            >
+              <span class="nav-source-logo" :class="item.logoClass" aria-hidden="true">{{ item.logoText }}</span>
+              <span class="nav-item-label">{{ item.label }}</span>
+            </RouterLink>
           </div>
 
           <!-- 社交媒体（真实订阅博主） -->
@@ -43,7 +50,8 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.socialMedia") }}</span>          </div>
+            <span class="nav-item-label">{{ t("nav.socialMedia") }}</span>
+          </div>
           <div class="nav-children" :class="{ expanded: expanded.socialMedia }">
             <RouterLink v-for="s in twitterSources" :key="s.id" :to="`/source/${s.id}`" class="nav-child">
               <img v-if="sourceHasContent(s.id) && s.avatar_url" :src="s.avatar_url" :alt="s.name" class="nav-source-avatar" referrerpolicy="no-referrer" />
@@ -59,7 +67,8 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="9 18 15 12 9 6" /></svg>
             </span>
             <span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M10 9l5 3-5 3z" /></svg></span>
-            <span class="nav-item-label">{{ t("nav.financeVideo") }}</span>          </div>
+            <span class="nav-item-label">{{ t("nav.financeVideo") }}</span>
+          </div>
           <div class="nav-children" :class="{ expanded: expanded.financeVideo }">
             <RouterLink v-for="s in youtubeSources" :key="s.id" :to="`/source/${s.id}`" class="nav-child">
               <img v-if="sourceHasContent(s.id) && s.avatar_url" :src="s.avatar_url" :alt="s.name" class="nav-source-avatar" referrerpolicy="no-referrer" />
@@ -183,11 +192,35 @@ const twitterSources = computed(() =>
 const youtubeSources = computed(() =>
   sortByLatest(sources.value.filter((s) => s.source_type === "youtube"))
 );
-
-// 静态占位分类（金融时讯 / 市场宏观 / 财经日历，后端暂未提供真实数据）
-const financeNewsItems = computed(() => [
-  t("nav.srcJin10"), t("nav.srcYahoo"), t("nav.srcBloomberg"), t("nav.srcReuters"),
-]);
+const financeNewsSources = computed(() =>
+  sortByLatest(sources.value.filter((s) => s.source_type === "finance_news"))
+);
+const financeNewsTabs = computed(() => {
+  const jin10Source = financeNewsSources.value[0];
+  return [
+    {
+      key: "jin10",
+      label: "jin10",
+      path: "/feed/finance_news",
+      logoClass: "nav-source-logo-jin10",
+      logoText: "10",
+    },
+    {
+      key: "bloomberg",
+      label: "Bloomberg",
+      path: "/feed/bloomberg",
+      logoClass: "nav-source-logo-bloomberg",
+      logoText: "B",
+    },
+    {
+      key: "reuters",
+      label: "Reuters",
+      path: "/feed/reuters",
+      logoClass: "nav-source-logo-reuters",
+      logoText: "R",
+    },
+  ];
+});
 
 const expanded = reactive<Record<string, boolean>>({});
 function toggleExpand(key: string) {

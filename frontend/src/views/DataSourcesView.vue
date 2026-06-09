@@ -15,9 +15,12 @@
       </div>
     </div>
 
-    <!-- 新增表单（金融时讯/市场宏观/财经日历暂不支持 URL 解析，显示提示） -->
+    <!-- 新增表单（金融时讯为内置信源；市场宏观/财经日历暂不支持 URL 解析） -->
     <div class="panel add-form">
-      <template v-if="isPlaceholderTab">
+      <template v-if="activeTab === 'finance_news'">
+        <p class="muted">{{ t("dataSources.builtinFinanceNews") }}</p>
+      </template>
+      <template v-else-if="isPlaceholderTab">
         <p class="muted">{{ t("dataSources.comingSoon") }}</p>
       </template>
       <template v-else>
@@ -129,7 +132,7 @@ import type { ContentType, DataSource, SourceType } from "../types";
 const { t } = useI18n();
 
 type SourceTab = "twitter" | "youtube" | "finance_news" | "macro_market" | "finance_calendar";
-const PLACEHOLDER_TABS: SourceTab[] = ["finance_news", "macro_market", "finance_calendar"];
+const PLACEHOLDER_TABS: SourceTab[] = ["macro_market", "finance_calendar"];
 const activeTab = ref<SourceTab>("twitter");
 const dataSources = ref<DataSource[]>([]);
 const loading = ref(false);
@@ -152,6 +155,7 @@ const isPlaceholderTab = computed(() => PLACEHOLDER_TABS.includes(activeTab.valu
 const visibleSources = computed(() => {
   if (activeTab.value === "twitter") return dataSources.value.filter((s) => s.source_type === "twitter");
   if (activeTab.value === "youtube") return dataSources.value.filter((s) => s.source_type === "youtube");
+  if (activeTab.value === "finance_news") return dataSources.value.filter((s) => s.source_type === "finance_news");
   return [];
 });
 const totalSourcePages = computed(() => Math.max(1, Math.ceil(visibleSources.value.length / SOURCE_PAGE_SIZE)));
@@ -256,6 +260,7 @@ function sourceTypeLabel(type: SourceType): string {
   switch (type) {
     case "youtube": return t("dataSources.platformYoutube");
     case "twitter": return t("dataSources.platformTwitter");
+    case "finance_news": return t("nav.financeNews");
     case "wechat_article": return t("dataSources.platformWechat");
     case "website": return t("dataSources.platformWebsite");
     case "rss": return "RSS";

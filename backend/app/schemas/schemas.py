@@ -76,10 +76,12 @@ class ContentItemResponse(BaseModel):
     thumbnail_url: str | None
     content_url: str
     published_at: datetime
+    raw_data: dict | None = None
     duration_seconds: int | None = None
     notified_at: datetime | None = None
     data_source_name: str
     data_source_avatar_url: str | None
+    data_source_external_id: str
     source_type: SourceType
 
 
