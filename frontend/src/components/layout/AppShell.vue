@@ -99,9 +99,9 @@
             <span class="nav-item-label">{{ t("nav.contentAnalysis") }}</span>
           </RouterLink>
           <div class="nav-children expanded">
-            <div class="nav-child">
+            <RouterLink to="/stock-analysis" class="nav-child">
               <span class="nav-item-label">{{ t("nav.stockAnalysis") }}</span>
-            </div>
+            </RouterLink>
             <div class="nav-child">
               <span class="nav-item-label">{{ t("nav.marketAnalysis") }}</span>
             </div>

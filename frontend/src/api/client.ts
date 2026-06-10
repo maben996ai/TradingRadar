@@ -6,7 +6,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("trendradar_token");
+  const token = localStorage.getItem("tradingradar_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -17,7 +17,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("trendradar_token");
+      localStorage.removeItem("tradingradar_token");
       window.location.href = "/login";
     }
     return Promise.reject(error);

@@ -9,6 +9,7 @@ from app.api import (
     content_items,
     crawl_logs,
     data_sources,
+    fundamentals,
     macro,
     settings,
     webhooks,
@@ -28,7 +29,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="TradingRader API",
+    title="TradingRadar API",
     description="Financial data source feed aggregation service",
     version="0.1.0",
     lifespan=lifespan,
@@ -56,3 +57,4 @@ app.include_router(crawl_logs.router, prefix="/api/crawl-logs", tags=["crawl-log
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 app.include_router(macro.router, prefix="/api/macro", tags=["macro"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
+app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["fundamentals"])

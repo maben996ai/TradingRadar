@@ -2,7 +2,7 @@ import { computed, ref, watch } from "vue";
 
 export type Locale = "zh-CN" | "en";
 
-const LOCALE_KEY = "trendradar_locale";
+const LOCALE_KEY = "tradingradar_locale";
 const defaultLocale: Locale = "zh-CN";
 
 const messages = {
@@ -109,6 +109,24 @@ const messages = {
       title: "投研分析",
       description: "基于大模型的视频内容分析与投研洞察，即将上线。",
     },
+    stockAnalysis: {
+      eyebrow: "个股分析",
+      title: "个股财报与披露下载",
+      description: "输入美股代码，自动抓取并下载对应的财报、披露文件与分析师预期。",
+      tickerPlaceholder: "公司代码，如 AAPL",
+      sourcesLabel: "数据源：",
+      downloadBtn: "开始下载",
+      downloading: "下载中…",
+      files: "个文件",
+      skipped: "已跳过",
+      colType: "类型",
+      colTitle: "标题",
+      colPeriod: "报告期",
+      colSize: "大小",
+      downloadFile: "下载",
+      noTicker: "请输入公司代码",
+      error: "请求失败，请稍后重试。",
+    },
     macro: {
       eyebrow: "市场宏观",
       title: "宏观看板",
@@ -167,7 +185,7 @@ const messages = {
     },
     auth: {
       loginEyebrow: "欢迎回来",
-      loginTitle: "登录 TradingRader",
+      loginTitle: "登录 TradingRadar",
       registerEyebrow: "新建工作区",
       registerTitle: "创建你的账号",
       email: "邮箱",
@@ -293,6 +311,24 @@ const messages = {
       title: "Research Analysis",
       description: "AI-powered content analysis and investment insights — coming soon.",
     },
+    stockAnalysis: {
+      eyebrow: "Stock Analysis",
+      title: "Fundamentals & Filings Download",
+      description: "Enter a US ticker to fetch and download its financial statements, filings and analyst estimates.",
+      tickerPlaceholder: "Ticker, e.g. AAPL",
+      sourcesLabel: "Sources:",
+      downloadBtn: "Download",
+      downloading: "Downloading…",
+      files: "files",
+      skipped: "Skipped",
+      colType: "Type",
+      colTitle: "Title",
+      colPeriod: "Period",
+      colSize: "Size",
+      downloadFile: "Download",
+      noTicker: "Please enter a ticker",
+      error: "Request failed, please try again.",
+    },
     macro: {
       eyebrow: "Market Macro",
       title: "Macro Dashboard",
@@ -351,7 +387,7 @@ const messages = {
     },
     auth: {
       loginEyebrow: "Welcome back",
-      loginTitle: "Sign in to TradingRader",
+      loginTitle: "Sign in to TradingRadar",
       registerEyebrow: "New workspace",
       registerTitle: "Create your account",
       email: "Email",
@@ -469,6 +505,22 @@ type MessageKey =
   | "contentAnalysis.eyebrow"
   | "contentAnalysis.title"
   | "contentAnalysis.description"
+  | "stockAnalysis.eyebrow"
+  | "stockAnalysis.title"
+  | "stockAnalysis.description"
+  | "stockAnalysis.tickerPlaceholder"
+  | "stockAnalysis.sourcesLabel"
+  | "stockAnalysis.downloadBtn"
+  | "stockAnalysis.downloading"
+  | "stockAnalysis.files"
+  | "stockAnalysis.skipped"
+  | "stockAnalysis.colType"
+  | "stockAnalysis.colTitle"
+  | "stockAnalysis.colPeriod"
+  | "stockAnalysis.colSize"
+  | "stockAnalysis.downloadFile"
+  | "stockAnalysis.noTicker"
+  | "stockAnalysis.error"
   | "macro.eyebrow"
   | "macro.title"
   | "macro.loading"

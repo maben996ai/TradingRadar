@@ -54,7 +54,7 @@ async def test_feishu_webhook(
         return {"status": "error", "message": "未配置 Webhook 地址"}
     await _notifier.send_card(
         webhook_url=settings.feishu_webhook_url,
-        title="TradingRader 通知测试 - 飞书推送已就绪",
+        title="TradingRadar 通知测试 - 飞书推送已就绪",
         creator_name="测试创作者",
         platform="youtube",
         content_url="https://www.youtube.com/watch?v=test",

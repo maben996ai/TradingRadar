@@ -5,11 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 ROOT_DIR = Path(__file__).resolve().parents[3]
-DEFAULT_SQLITE_PATH = ROOT_DIR / "backend" / "data" / "trendradar.db"
+DEFAULT_SQLITE_PATH = ROOT_DIR / "backend" / "data" / "tradingradar.db"
 
 
 class Settings(BaseSettings):
-    app_name: str = "TradingRader"
+    app_name: str = "TradingRadar"
     api_prefix: str = "/api"
     database_url: str = f"sqlite+aiosqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
     redis_url: str = "redis://localhost:6379/0"
@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     fred_api_key: str = ""
     trading_economics_api_key: str = ""
     fmp_api_key: str = ""
+    finnhub_api_key: str = ""
+    quartr_api_key: str = ""
+    sec_edgar_user_agent: str = ""
+    fundamentals_dir: str = ""
     nginx_conf_file: str = "nginx.http.conf"
     feishu_app_id: str = ""
     feishu_app_secret: str = ""
