@@ -19,23 +19,11 @@
             : t("contentAnalysis.youtubeNotLoggedIn")
         }}
       </span>
-      <button class="ca-link" @click="showCookies = !showCookies">
-        {{ t("contentAnalysis.cookiesLogin") }}
+      <button class="ca-link" :disabled="loggingIn" @click="onLoginBrowser">
+        {{ loggingIn ? "…" : t("contentAnalysis.importBrowser") }}
       </button>
     </div>
-
-    <div v-if="showCookies" class="ca-cookies">
-      <textarea
-        v-model="cookiesText"
-        class="ca-textarea"
-        :placeholder="t('contentAnalysis.cookiesPlaceholder')"
-        rows="4"
-      />
-      <button class="ca-btn" :disabled="loggingIn" @click="onLoginCookies">
-        {{ t("contentAnalysis.cookiesSubmit") }}
-      </button>
-      <p v-if="loginMsg" class="muted">{{ loginMsg }}</p>
-    </div>
+    <p v-if="loginMsg" class="muted ca-hint">{{ loginMsg }}</p>
 
     <div class="ca-form">
       <input
@@ -61,6 +49,13 @@
       <span>{{ t("contentAnalysis.countText") }}: {{ counts.text ?? 0 }}</span>
     </div>
 
+    <input
+      v-model="query"
+      class="ca-input ca-search"
+      :placeholder="t('contentAnalysis.searchPlaceholder')"
+      @input="onSearch"
+    />
+
     <p v-if="!sources.length" class="muted ca-empty">{{ t("contentAnalysis.empty") }}</p>
 
     <div v-else class="ca-sources">
@@ -79,7 +74,7 @@
             <span v-if="a.status === 'running'" class="ca-progress">
               {{ a.progress.toFixed(0) }}%
             </span>
-            <span v-if="a.error" class="ca-err" :title="a.error">!</span>
+            <span v-if="a.error" class="ca-err" :title="a.error">{{ a.error }}</span>
             <span class="ca-actions">
               <button
                 v-if="a.type !== 'text' && a.status === 'finished'"
@@ -96,13 +91,13 @@
               >
                 {{ t("contentAnalysis.viewText") }}
               </button>
-              <a
-                v-if="a.type !== 'text' && a.status === 'finished'"
+              <button
+                v-if="a.status === 'finished'"
                 class="ca-link"
-                :href="fileUrl(a.id)"
+                @click="onReveal(a.id)"
               >
-                {{ t("contentAnalysis.downloadFile") }}
-              </a>
+                {{ t("contentAnalysis.openFolder") }}
+              </button>
               <button
                 v-if="['queued', 'running', 'processing'].includes(a.status)"
                 class="ca-link"
@@ -149,13 +144,13 @@ const error = ref("");
 const sources = ref<AnalysisSource[]>([]);
 const counts = ref<Record<string, number> | null>(null);
 const status = ref<AnalysisStatus | null>(null);
-const showCookies = ref(false);
-const cookiesText = ref("");
 const loggingIn = ref(false);
 const loginMsg = ref("");
 const textPreview = ref<string | null>(null);
+const query = ref("");
 
 let timer: number | undefined;
+let searchTimer: number | undefined;
 
 const hasActive = computed(() =>
   sources.value.some((s) =>
@@ -176,9 +171,6 @@ function statusLabel(s: string): string {
   return STATUS_KEYS[s] ? t(STATUS_KEYS[s]) : s;
 }
 
-function fileUrl(id: string): string {
-  return contentAnalysisApi.fileUrl(id);
-}
 
 async function loadStatus() {
   try {
@@ -190,12 +182,17 @@ async function loadStatus() {
 
 async function loadList() {
   try {
-    const { data } = await contentAnalysisApi.list();
+    const { data } = await contentAnalysisApi.list(undefined, query.value.trim() || undefined);
     sources.value = data.sources;
     counts.value = data.counts;
   } catch {
     // 列表拉取失败不阻断
   }
+}
+
+function onSearch() {
+  if (searchTimer) window.clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(loadList, 300);
 }
 
 function schedulePoll() {
@@ -235,6 +232,14 @@ async function onCancel(id: string) {
   await loadList();
 }
 
+async function onReveal(id: string) {
+  try {
+    await contentAnalysisApi.reveal(id);
+  } catch {
+    error.value = t("contentAnalysis.downloadFailed");
+  }
+}
+
 async function onDeleteArtifact(id: string) {
   if (!window.confirm(t("contentAnalysis.confirmDelete"))) return;
   await contentAnalysisApi.deleteArtifact(id, true);
@@ -255,11 +260,12 @@ async function onViewText(id: string) {
   }
 }
 
-async function onLoginCookies() {
+async function onLoginBrowser() {
   loggingIn.value = true;
   loginMsg.value = "";
   try {
-    const { data } = await contentAnalysisApi.loginCookies(cookiesText.value);
+    // 默认从当前浏览器（Chrome）导入 cookies，无需用户选择
+    const { data } = await contentAnalysisApi.loginBrowser("chrome");
     loginMsg.value =
       data.message ||
       (data.ok ? t("contentAnalysis.loginSuccess") : t("contentAnalysis.loginFailed"));
@@ -357,6 +363,10 @@ onUnmounted(() => {
   color: #dc2626;
   margin: 0.4rem 0;
 }
+.ca-search {
+  width: 100%;
+  margin: 0.2rem 0 0.8rem;
+}
 .ca-counts {
   display: flex;
   gap: 1rem;
@@ -434,7 +444,11 @@ onUnmounted(() => {
 }
 .ca-err {
   color: #dc2626;
-  font-weight: 700;
+  font-size: 0.78rem;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: help;
 }
 .ca-actions {

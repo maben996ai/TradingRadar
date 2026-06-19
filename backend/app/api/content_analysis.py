@@ -3,6 +3,9 @@
 移植自 yt-dlp-x 后端，遵循 TradingRadar 分层：路由仅做入口，逻辑在 services。
 """
 
+import subprocess
+import sys
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,19 +81,22 @@ async def transcribe(
         source_artifact_id=media.id,
         meta={"model": backends.active_model_label()},
     )
-    background_tasks.add_task(runner.run_transcribe, text_art.id, media.filepath, src.id)
+    background_tasks.add_task(
+        runner.run_transcribe, text_art.id, media.id, media.filepath, src.id
+    )
     return _artifact_response(text_art)
 
 
 @router.get("/artifacts", response_model=AnalysisListResponse)
 async def list_artifacts(
     type: str | None = Query(default=None),
+    q: str | None = Query(default=None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AnalysisListResponse:
     type_filter = type if type in ("video", "audio", "text") else None
     order = {"video": 0, "audio": 1, "text": 2}
-    sources = await store.list_sources(db, current_user.id, type_filter)
+    sources = await store.list_sources(db, current_user.id, type_filter, query=q)
     out: list[AnalysisSourceResponse] = []
     for s in sources:
         arts = [a for a in s.artifacts if not type_filter or a.type == type_filter]
@@ -125,6 +131,31 @@ async def artifact_file(
     if rp.suffix.lower() in TEXT_EXT:
         return PlainTextResponse(rp.read_text(encoding="utf-8"))
     return FileResponse(rp, filename=art.filename or rp.name)
+
+
+@router.post("/artifacts/{aid}/reveal", response_model=AnalysisActionResponse)
+async def reveal_artifact(
+    aid: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AnalysisActionResponse:
+    """在宿主机文件管理器中定位文件（仅后端跑在本机时有效）。"""
+    art, _src = await store.get_artifact_owned(db, aid, current_user.id)
+    if art is None:
+        raise HTTPException(status_code=404, detail="产物不存在")
+    rp = store.safe_path(art.filepath)
+    if rp is None or not rp.is_file():
+        raise HTTPException(status_code=404, detail="文件不存在")
+    try:
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", "-R", str(rp)])
+        elif sys.platform.startswith("win"):
+            subprocess.Popen(["explorer", "/select,", str(rp)])
+        else:
+            subprocess.Popen(["xdg-open", str(rp.parent)])
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"无法打开文件夹：{exc}") from exc
+    return AnalysisActionResponse(ok=True)
 
 
 @router.post("/artifacts/{aid}/cancel", response_model=AnalysisActionResponse)

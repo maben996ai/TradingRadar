@@ -151,7 +151,10 @@ async def get_artifact_owned(
 
 
 async def list_sources(
-    db: AsyncSession, user_id: str, type_filter: str | None = None
+    db: AsyncSession,
+    user_id: str,
+    type_filter: str | None = None,
+    query: str | None = None,
 ) -> list[AnalysisSource]:
     stmt = (
         select(AnalysisSource)
@@ -162,6 +165,13 @@ async def list_sources(
     sources = list(await db.scalars(stmt))
     if type_filter:
         sources = [s for s in sources if any(a.type == type_filter for a in s.artifacts)]
+    if query:
+        kw = query.strip().lower()
+        sources = [
+            s
+            for s in sources
+            if kw in (s.title or "").lower() or kw in (s.author or "").lower()
+        ]
     return sources
 
 

@@ -9,7 +9,8 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://backend:8000",
+        // 默认走 Docker 网络名；宿主机直跑时用 VITE_PROXY_TARGET=http://localhost:8000 覆盖
+        target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
         changeOrigin: true,
       },
     },

@@ -13,9 +13,12 @@ export const contentAnalysisApi = {
   status() {
     return apiClient.get<AnalysisStatus>("/content-analysis/status");
   },
-  list(type?: string) {
+  list(type?: string, q?: string) {
+    const params: Record<string, string> = {};
+    if (type) params.type = type;
+    if (q) params.q = q;
     return apiClient.get<AnalysisListResponse>("/content-analysis/artifacts", {
-      params: type ? { type } : undefined,
+      params: Object.keys(params).length ? params : undefined,
     });
   },
   download(url: string, mode: "video" | "audio") {
@@ -30,6 +33,11 @@ export const contentAnalysisApi = {
       `/content-analysis/artifacts/${artifactId}/transcribe`,
       {},
       NO_TIMEOUT,
+    );
+  },
+  reveal(artifactId: string) {
+    return apiClient.post<AnalysisActionResponse>(
+      `/content-analysis/artifacts/${artifactId}/reveal`,
     );
   },
   cancel(artifactId: string) {
@@ -49,10 +57,10 @@ export const contentAnalysisApi = {
       { params: { delete_files: deleteFiles } },
     );
   },
-  loginCookies(cookies: string) {
+  loginBrowser(browser: string, profile?: string) {
     return apiClient.post<AnalysisActionResponse>(
-      "/content-analysis/login/cookies",
-      { cookies },
+      "/content-analysis/login/browser",
+      { browser, profile: profile || null },
       NO_TIMEOUT,
     );
   },

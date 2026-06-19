@@ -172,6 +172,8 @@ async def test_run_download_success(
 
     monkeypatch.setattr(runner, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(store, "base_dir", lambda: tmp_path)
+    # 关闭自动转写，专注验证下载流程
+    monkeypatch.setattr(backends, "whisper_available", lambda: False)
 
     media_file = tmp_path / "video.mp4"
     media_file.write_bytes(b"fakevideo")
@@ -250,7 +252,7 @@ async def test_run_transcribe_success(
         db, src.id, ArtifactType.TEXT, source_artifact_id=media.id
     )
 
-    await runner.run_transcribe(text_art.id, str(audio), src.id)
+    await runner.run_transcribe(text_art.id, media.id, str(audio), src.id)
 
     async with session_factory() as check:
         from app.models.models import AnalysisArtifact
@@ -259,3 +261,7 @@ async def test_run_transcribe_success(
         assert refreshed.status == ArtifactStatus.FINISHED
         assert (tmp_path / "clip.txt").read_text() == "hello world"
         assert refreshed.meta["preview"] == "hello world"
+        # 默认开启转写后删源：media 产物应被删除，血缘断开
+        assert await check.get(AnalysisArtifact, media.id) is None
+        assert refreshed.source_artifact_id is None
+        assert refreshed.meta.get("deleted_source")

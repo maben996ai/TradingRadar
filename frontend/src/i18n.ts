@@ -120,6 +120,8 @@ const messages = {
       retry: "重试",
       viewText: "查看文本",
       downloadFile: "下载文件",
+      openFolder: "打开文件夹",
+      searchPlaceholder: "按作者或标题搜索…",
       empty: "还没有任何内容，粘贴链接开始分析。",
       countSources: "来源",
       countVideo: "视频",
@@ -135,9 +137,8 @@ const messages = {
       backendUnavailable: "转写后端不可用（未安装 Whisper）",
       youtubeLoggedIn: "YouTube 已登录",
       youtubeNotLoggedIn: "YouTube 未登录（受限内容可能无法下载）",
-      cookiesLogin: "Cookies 登录",
-      cookiesPlaceholder: "粘贴 youtube.com 的 cookies（Netscape 格式）",
-      cookiesSubmit: "用 Cookies 登录",
+      importBrowser: "从浏览器导入登录",
+      loginRemembered: "登录后自动记住，下次无需重复操作",
       loginSuccess: "登录成功",
       loginFailed: "登录失败",
       downloadFailed: "下载失败，请稍后重试",
@@ -376,6 +377,8 @@ const messages = {
       retry: "Retry",
       viewText: "View text",
       downloadFile: "Download file",
+      openFolder: "Open folder",
+      searchPlaceholder: "Search by author or title…",
       empty: "Nothing yet — paste a link to start.",
       countSources: "Sources",
       countVideo: "Video",
@@ -391,9 +394,8 @@ const messages = {
       backendUnavailable: "Transcribe backend unavailable (Whisper not installed)",
       youtubeLoggedIn: "YouTube signed in",
       youtubeNotLoggedIn: "YouTube not signed in (restricted content may fail)",
-      cookiesLogin: "Cookies login",
-      cookiesPlaceholder: "Paste youtube.com cookies (Netscape format)",
-      cookiesSubmit: "Sign in with cookies",
+      importBrowser: "Import from browser",
+      loginRemembered: "Remembered automatically after sign-in",
       loginSuccess: "Signed in",
       loginFailed: "Login failed",
       downloadFailed: "Download failed, please retry",
@@ -624,6 +626,8 @@ export type MessageKey =
   | "contentAnalysis.retry"
   | "contentAnalysis.viewText"
   | "contentAnalysis.downloadFile"
+  | "contentAnalysis.openFolder"
+  | "contentAnalysis.searchPlaceholder"
   | "contentAnalysis.empty"
   | "contentAnalysis.countSources"
   | "contentAnalysis.countVideo"
@@ -639,9 +643,8 @@ export type MessageKey =
   | "contentAnalysis.backendUnavailable"
   | "contentAnalysis.youtubeLoggedIn"
   | "contentAnalysis.youtubeNotLoggedIn"
-  | "contentAnalysis.cookiesLogin"
-  | "contentAnalysis.cookiesPlaceholder"
-  | "contentAnalysis.cookiesSubmit"
+  | "contentAnalysis.importBrowser"
+  | "contentAnalysis.loginRemembered"
   | "contentAnalysis.loginSuccess"
   | "contentAnalysis.loginFailed"
   | "contentAnalysis.downloadFailed"

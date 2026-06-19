@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     whisper_mlx_model: str = "mlx-community/whisper-large-v3-mlx"
     whisper_model: str = "base"  # openai-whisper 模型规格
     whisper_language: str = ""  # 空=自动检测
+    content_analysis_auto_transcribe: bool = True  # 视频下载完成后自动转写
+    content_analysis_delete_source_after_transcribe: bool = True  # 转写成功后删除源音/视频
     nginx_conf_file: str = "nginx.http.conf"
     feishu_app_id: str = ""
     feishu_app_secret: str = ""
