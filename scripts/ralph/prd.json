@@ -1,0 +1,36 @@
+{
+  "project": "TradingRadar",
+  "branchName": "ralph/demo-ralph-pipeline",
+  "description": "Demo: Ralph + OpenSpec 流水线演示 —— 暴露应用版本信息端点 GET /api/version",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "新增 GET /api/version 端点",
+      "description": "As an API consumer, I want a /api/version endpoint so that I can read the app name and version.",
+      "acceptanceCriteria": [
+        "新增 GET /api/version 路由，返回 JSON 含 name 与 version 两个字段（取自 FastAPI app 的 title/version）",
+        "端点无需鉴权即可访问，返回 200",
+        "在 backend/app/main.py 注册该路由",
+        "cd backend && ruff check . 通过",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "为 /api/version 增加 pytest",
+      "description": "As a developer, I want a test for /api/version so that the endpoint stays correct.",
+      "acceptanceCriteria": [
+        "新增 pytest 断言 GET /api/version 返回 200",
+        "断言响应 JSON 含 name 与 version 字段",
+        "cd backend && python -m pytest -q 全部通过",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
