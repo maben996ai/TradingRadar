@@ -26,6 +26,15 @@ export interface DataSource {
   source_config?: Record<string, unknown> | null;
 }
 
+export interface QuotedContent {
+  text: string;
+  author_name: string;
+  author_username: string;
+  author_avatar_url?: string | null;
+  thumbnail_url?: string | null;
+  url?: string | null;
+}
+
 export interface ContentItem {
   id: string;
   data_source_id: string;
@@ -37,10 +46,34 @@ export interface ContentItem {
   content_url: string;
   published_at: string;
   raw_data?: Record<string, unknown> | null;
+  quoted?: QuotedContent | null;
   duration_seconds?: number | null;
   data_source_name: string;
   data_source_avatar_url?: string | null;
   data_source_external_id: string;
+}
+
+export interface ResearchSource {
+  key: string;
+  name: string;
+}
+
+export interface ResearchResolveResponse {
+  ticker: string;
+  company_name: string;
+  lookback_days: number;
+}
+
+export interface ResearchItem {
+  title: string;
+  url: string;
+  meta: string;
+  published_at: string | null;
+}
+
+export interface ResearchSourceResult {
+  items: ResearchItem[];
+  error: string | null;
 }
 
 export interface ContentItemListResponse {

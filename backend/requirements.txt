@@ -17,6 +17,9 @@ apscheduler==3.10.4
 # HTTP client
 httpx==0.27.2
 
+# RSS/Atom 解析（行业研报信源）
+feedparser==6.0.11
+
 # Auth
 PyJWT==2.10.1
 bcrypt==5.0.0

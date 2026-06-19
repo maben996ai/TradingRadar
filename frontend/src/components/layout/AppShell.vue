@@ -102,6 +102,9 @@
             <RouterLink to="/stock-analysis" class="nav-child">
               <span class="nav-item-label">{{ t("nav.stockAnalysis") }}</span>
             </RouterLink>
+            <RouterLink to="/industry-reports" class="nav-child">
+              <span class="nav-item-label">{{ t("nav.industryReports") }}</span>
+            </RouterLink>
             <div class="nav-child">
               <span class="nav-item-label">{{ t("nav.marketAnalysis") }}</span>
             </div>
@@ -228,7 +231,7 @@ function toggleExpand(key: string) {
 }
 
 function openPlatform(key: string, path: string) {
-  expanded[key] = true;
+  expanded[key] = !expanded[key];
   router.push(path);
 }
 

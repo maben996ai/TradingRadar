@@ -44,6 +44,38 @@
                 @click="lightboxUrl = post.thumbnail_url"
               />
             </div>
+            <!-- 引用推文：展示被引用原帖的完整内容 -->
+            <a
+              v-if="post.quoted"
+              :href="post.quoted.url ?? undefined"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-quote"
+              :class="{ collapsed: isCollapsed(post) }"
+            >
+              <div class="social-quote-head">
+                <img
+                  v-if="post.quoted.author_avatar_url"
+                  :src="post.quoted.author_avatar_url"
+                  class="social-quote-avatar"
+                  :alt="post.quoted.author_name"
+                  referrerpolicy="no-referrer"
+                />
+                <span class="social-quote-author">{{ post.quoted.author_name }}</span>
+                <span v-if="post.quoted.author_username" class="social-quote-handle">@{{ post.quoted.author_username }}</span>
+              </div>
+              <p v-if="post.quoted.text" class="social-quote-text">{{ post.quoted.text }}</p>
+              <div v-if="post.quoted.thumbnail_url" class="social-quote-media-frame">
+                <img
+                  :src="post.quoted.thumbnail_url"
+                  class="social-quote-media"
+                  :alt="post.quoted.text"
+                  loading="lazy"
+                  referrerpolicy="no-referrer"
+                  @click.prevent.stop="lightboxUrl = post.quoted.thumbnail_url"
+                />
+              </div>
+            </a>
             <div class="social-actions">
               <button
                 v-if="canCollapse(post)"

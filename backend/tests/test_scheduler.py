@@ -819,7 +819,10 @@ class TestCrawlAllSources:
         ):
             await crawl_regular_sources()
 
-        assert requested_ids == ["youtube-1"]
+        # 常规抓取包含 youtube，并自动纳入内置 RSS 源；排除社交媒体与金融时讯
+        assert "youtube-1" in requested_ids
+        assert "twitter-1" not in requested_ids
+        assert "jin10_flash" not in requested_ids
 
     async def test_finance_news_crawl_requests_all_builtin_finance_news_sources(
         self, db, session_factory

@@ -44,6 +44,29 @@
         </el-form-item>
       </el-form>
     </div>
+
+    <div class="panel">
+      <p class="eyebrow">API 用量</p>
+      <h2>额度查看</h2>
+      <p class="muted">跳转到各数据源控制台，查看接口调用量与剩余额度。</p>
+
+      <div class="quota-links">
+        <a
+          v-for="link in quotaLinks"
+          :key="link.url"
+          :href="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="quota-link"
+        >
+          <div class="quota-link-main">
+            <span class="quota-link-name">{{ link.name }}</span>
+            <span class="muted quota-link-desc">{{ link.desc }}</span>
+          </div>
+          <span class="quota-link-arrow">↗</span>
+        </a>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -57,6 +80,19 @@ const loading = ref(false);
 const creating = ref(false);
 const testingId = ref<string | null>(null);
 const form = ref({ name: "", webhook_url: "" });
+
+const quotaLinks = [
+  {
+    name: "TwitterAPI.io",
+    desc: "X/Twitter 抓取额度与用量",
+    url: "https://twitterapi.io/zh-CN/dashboard",
+  },
+  {
+    name: "FMP",
+    desc: "Financial Modeling Prep 接口额度与用量",
+    url: "https://site.financialmodelingprep.com/developer/docs/dashboard",
+  },
+];
 
 async function load() {
   loading.value = true;

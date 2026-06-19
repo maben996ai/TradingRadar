@@ -1,12 +1,29 @@
+import base64
+import hashlib
+import hmac
 import logging
+import time
 from datetime import datetime
 
 import httpx
 
+from app.core.config import get_settings
 from app.services.notifiers.base import BaseNotifier
 from app.services.notifiers.feishu_client import FeishuAppClient, get_feishu_app_client
 
 logger = logging.getLogger(__name__)
+
+
+def _sign_body(body: dict) -> dict:
+    """自定义机器人开启签名校验后，注入 timestamp + sign；未配置密钥时原样返回。"""
+    secret = get_settings().feishu_webhook_secret
+    if not secret:
+        return body
+    timestamp = str(int(time.time()))
+    string_to_sign = f"{timestamp}\n{secret}"
+    digest = hmac.new(string_to_sign.encode("utf-8"), b"", hashlib.sha256).digest()
+    sign = base64.b64encode(digest).decode("utf-8")
+    return {**body, "timestamp": timestamp, "sign": sign}
 
 
 def _format_published_at(dt: datetime) -> str:
@@ -26,7 +43,7 @@ class FeishuNotifier(BaseNotifier):
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(
                 webhook_url,
-                json={"msg_type": "text", "content": {"text": message}},
+                json=_sign_body({"msg_type": "text", "content": {"text": message}}),
             )
 
     async def _resolve_image_key(self, thumbnail_url: str | None) -> str | None:
@@ -125,4 +142,7 @@ class FeishuNotifier(BaseNotifier):
         }
 
         async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(webhook_url, json={"msg_type": "interactive", "card": card})
+            await client.post(
+                webhook_url,
+                json=_sign_body({"msg_type": "interactive", "card": card}),
+            )

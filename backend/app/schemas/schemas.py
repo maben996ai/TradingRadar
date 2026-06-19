@@ -65,6 +65,17 @@ class DataSourceResponse(BaseModel):
     created_at: datetime
 
 
+class QuotedContent(BaseModel):
+    """被引用推文的精简内容（quote tweet 原帖）。"""
+
+    text: str
+    author_name: str
+    author_username: str
+    author_avatar_url: str | None = None
+    thumbnail_url: str | None = None
+    url: str | None = None
+
+
 class ContentItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,12 +88,36 @@ class ContentItemResponse(BaseModel):
     content_url: str
     published_at: datetime
     raw_data: dict | None = None
+    quoted: QuotedContent | None = None
     duration_seconds: int | None = None
     notified_at: datetime | None = None
     data_source_name: str
     data_source_avatar_url: str | None
     data_source_external_id: str
     source_type: SourceType
+
+
+class ResearchSource(BaseModel):
+    key: str
+    name: str
+
+
+class ResearchResolveResponse(BaseModel):
+    ticker: str
+    company_name: str
+    lookback_days: int
+
+
+class ResearchItem(BaseModel):
+    title: str
+    url: str
+    meta: str  # 日期等附注
+    published_at: datetime | None = None
+
+
+class ResearchSourceResult(BaseModel):
+    items: list[ResearchItem]
+    error: str | None = None
 
 
 class SettingsUpdate(BaseModel):

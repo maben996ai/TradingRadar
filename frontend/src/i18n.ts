@@ -40,6 +40,7 @@ const messages = {
       calEarnings: "公司财报",
       stockAnalysis: "个股分析",
       marketAnalysis: "市场分析",
+      industryReports: "行业研报",
       memberOnline: "Pro 会员 · 在线",
     },
     feed: {
@@ -108,6 +109,23 @@ const messages = {
       eyebrow: "投研分析",
       title: "投研分析",
       description: "基于大模型的视频内容分析与投研洞察，即将上线。",
+    },
+    industryReport: {
+      eyebrow: "行业研报",
+      title: "标的研报检索",
+      description: "输入公司代码，聚合近 3 个月各信源的研报、行业分析与 SEC 监管披露。",
+      tickerPlaceholder: "公司代码，如 NVDA",
+      search: "检索",
+      searching: "检索中…",
+      searchFailed: "检索失败，请稍后重试",
+      open: "查看原文",
+      windowPrefix: "近",
+      windowSuffix: "天",
+      statusPending: "等待中",
+      statusSearching: "检索中…",
+      statusFailed: "请求失败",
+      hitsSuffix: "条",
+      noHits: "无匹配",
     },
     stockAnalysis: {
       eyebrow: "个股分析",
@@ -242,6 +260,7 @@ const messages = {
       calEarnings: "Earnings",
       stockAnalysis: "Stock Analysis",
       marketAnalysis: "Market Analysis",
+      industryReports: "Industry Reports",
       memberOnline: "Pro · Online",
     },
     feed: {
@@ -310,6 +329,23 @@ const messages = {
       eyebrow: "Research Analysis",
       title: "Research Analysis",
       description: "AI-powered content analysis and investment insights — coming soon.",
+    },
+    industryReport: {
+      eyebrow: "Industry Reports",
+      title: "Research Lookup",
+      description: "Enter a ticker to aggregate the past 3 months of research, industry analysis and SEC filings.",
+      tickerPlaceholder: "Ticker, e.g. NVDA",
+      search: "Search",
+      searching: "Searching…",
+      searchFailed: "Search failed, please retry",
+      open: "Open",
+      windowPrefix: "past",
+      windowSuffix: "days",
+      statusPending: "Queued",
+      statusSearching: "Searching…",
+      statusFailed: "Request failed",
+      hitsSuffix: "hits",
+      noHits: "No matches",
     },
     stockAnalysis: {
       eyebrow: "Stock Analysis",
@@ -443,6 +479,7 @@ type MessageKey =
   | "nav.calEarnings"
   | "nav.stockAnalysis"
   | "nav.marketAnalysis"
+  | "nav.industryReports"
   | "nav.memberOnline"
   | "feed.eyebrow"
   | "feed.title"
@@ -505,6 +542,21 @@ type MessageKey =
   | "contentAnalysis.eyebrow"
   | "contentAnalysis.title"
   | "contentAnalysis.description"
+  | "industryReport.eyebrow"
+  | "industryReport.title"
+  | "industryReport.description"
+  | "industryReport.tickerPlaceholder"
+  | "industryReport.search"
+  | "industryReport.searching"
+  | "industryReport.searchFailed"
+  | "industryReport.open"
+  | "industryReport.windowPrefix"
+  | "industryReport.windowSuffix"
+  | "industryReport.statusPending"
+  | "industryReport.statusSearching"
+  | "industryReport.statusFailed"
+  | "industryReport.hitsSuffix"
+  | "industryReport.noHits"
   | "stockAnalysis.eyebrow"
   | "stockAnalysis.title"
   | "stockAnalysis.description"

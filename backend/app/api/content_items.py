@@ -81,6 +81,42 @@ def _extract_full_text(raw_data: dict | None) -> str | None:
     return None
 
 
+def _tweet_media_url(tweet: dict) -> str | None:
+    """从推文对象中取首张配图，逻辑对齐采集器的缩略图提取。"""
+    media_items: list = []
+    for container_key in ("extendedEntities", "extended_entities", "entities"):
+        container = tweet.get(container_key) or {}
+        if isinstance(container, dict):
+            media_items.extend(container.get("media") or [])
+    media_items.extend(tweet.get("media") or [])
+    for item in media_items:
+        if not isinstance(item, dict):
+            continue
+        for key in ("media_url_https", "media_url", "preview_image_url", "url"):
+            value = item.get(key)
+            if isinstance(value, str) and value.startswith("http"):
+                return value
+    return None
+
+
+def _extract_quoted(raw_data: dict | None) -> dict | None:
+    """提取引用推文（quote tweet）的完整内容，供前端渲染引用卡片。"""
+    if not raw_data:
+        return None
+    quoted = raw_data.get("quoted_tweet")
+    if not isinstance(quoted, dict):
+        return None
+    author = quoted.get("author") or {}
+    return {
+        "text": (quoted.get("text") or "").strip(),
+        "author_name": author.get("name") or author.get("userName") or "",
+        "author_username": author.get("userName") or "",
+        "author_avatar_url": author.get("profilePicture"),
+        "thumbnail_url": _tweet_media_url(quoted),
+        "url": quoted.get("url"),
+    }
+
+
 def _encode_cursor(published_at: str, item_id: str) -> str:
     payload = json.dumps({"published_at": published_at, "id": item_id})
     return base64.urlsafe_b64encode(payload.encode()).decode()
@@ -144,6 +180,7 @@ async def list_content_items(
             content_url=v.content_url,
             published_at=v.published_at,
             raw_data=v.raw_data,
+            quoted=_extract_quoted(v.raw_data),
             duration_seconds=_extract_duration_seconds(v.raw_data),
             data_source_name=v.data_source.name,
             data_source_avatar_url=v.data_source.avatar_url,

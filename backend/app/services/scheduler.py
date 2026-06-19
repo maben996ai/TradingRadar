@@ -20,6 +20,7 @@ from app.models.models import (
     User,
 )
 from app.services.calendar.service import refresh_all as refresh_calendar_all
+from app.services.research.rss_sources import RSS_BUILTIN_SOURCES
 from app.services.crawlers.jin10 import (
     JIN10_CALENDAR_EXTERNAL_ID,
     JIN10_FLASH_EXTERNAL_ID,
@@ -203,6 +204,38 @@ async def _initial_calendar_refresh() -> None:
         count = await db.scalar(select(func.count()).select_from(CalendarEvent))
     if (count or 0) == 0:
         await refresh_calendar_events()
+
+
+async def ensure_builtin_rss_sources() -> int:
+    """为每个用户准备内置 RSS 行业信源（external_id 即订阅源 URL）。"""
+    async with AsyncSessionLocal() as db:
+        users = list(await db.scalars(select(User)))
+        inserted = 0
+        for user in users:
+            for source_def in RSS_BUILTIN_SOURCES:
+                existing = await db.scalar(
+                    select(DataSource).where(
+                        DataSource.user_id == user.id,
+                        DataSource.source_type == SourceType.RSS,
+                        DataSource.external_id == source_def["url"],
+                    )
+                )
+                if existing is not None:
+                    existing.name = source_def["name"]
+                    continue
+                db.add(
+                    DataSource(
+                        user_id=user.id,
+                        source_type=SourceType.RSS,
+                        external_id=source_def["url"],
+                        name=source_def["name"],
+                        profile_url=source_def["url"],
+                        content_type=ContentType.ARTICLE,
+                    )
+                )
+                inserted += 1
+        await db.commit()
+        return inserted
 
 
 async def ensure_builtin_finance_news_sources() -> int:
@@ -491,6 +524,7 @@ async def crawl_all_sources() -> None:
 
 
 async def crawl_regular_sources() -> None:
+    await ensure_builtin_rss_sources()
     source_types = tuple(
         source_type
         for source_type in crawler_registry.supported_types()

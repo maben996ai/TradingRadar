@@ -6,6 +6,7 @@ import ContentAnalysisView from "../views/ContentAnalysisView.vue";
 import ControlCenterView from "../views/ControlCenterView.vue";
 import DataSourcesView from "../views/DataSourcesView.vue";
 import HomeView from "../views/HomeView.vue";
+import IndustryReportListView from "../views/IndustryReportListView.vue";
 import LoginView from "../views/LoginView.vue";
 import CalendarView from "../views/CalendarView.vue";
 import MacroMarketView from "../views/MacroMarketView.vue";
@@ -33,6 +34,7 @@ export const router = createRouter({
         { path: "author/:creatorId", redirect: (to) => `/source/${to.params.creatorId}` },
         { path: "content-analysis", name: "content-analysis", component: ContentAnalysisView },
         { path: "stock-analysis", name: "stock-analysis", component: StockAnalysisView },
+        { path: "industry-reports", name: "industry-reports", component: IndustryReportListView },
         { path: "control-center", name: "control-center", component: ControlCenterView },
       ],
     },

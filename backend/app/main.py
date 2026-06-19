@@ -11,6 +11,7 @@ from app.api import (
     data_sources,
     fundamentals,
     macro,
+    research,
     settings,
     webhooks,
 )
@@ -58,3 +59,4 @@ app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 app.include_router(macro.router, prefix="/api/macro", tags=["macro"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["fundamentals"])
+app.include_router(research.router, prefix="/api/research", tags=["research"])

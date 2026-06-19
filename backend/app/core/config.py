@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     nginx_conf_file: str = "nginx.http.conf"
     feishu_app_id: str = ""
     feishu_app_secret: str = ""
+    feishu_webhook_secret: str = ""
+    frontend_base_url: str = ""  # 用于通知卡片中的详情链接
     dev_account_email: str = "maben996@gmail.com"
     dev_account_display_name: str = "maben996"
     dev_account_password: str = ""
