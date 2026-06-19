@@ -196,3 +196,55 @@ export interface FundamentalsDownloadResponse {
   ticker: string;
   results: FundamentalsSourceResult[];
 }
+
+// 内容分析（yt-dlp 下载 + Whisper 转写）
+export type AnalysisArtifactType = "video" | "audio" | "text";
+export type AnalysisArtifactStatus =
+  | "queued"
+  | "running"
+  | "processing"
+  | "finished"
+  | "error"
+  | "canceled";
+
+export interface AnalysisArtifact {
+  id: string;
+  type: AnalysisArtifactType;
+  stage: string;
+  status: AnalysisArtifactStatus;
+  progress: number;
+  filename: string | null;
+  size: number | null;
+  error: string | null;
+  source_artifact_id: string | null;
+  meta: Record<string, unknown> | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export interface AnalysisSource {
+  id: string;
+  url: string;
+  title: string;
+  author: string | null;
+  created_at: string;
+  artifacts: AnalysisArtifact[];
+}
+
+export interface AnalysisListResponse {
+  sources: AnalysisSource[];
+  counts: Record<string, number>;
+}
+
+export interface AnalysisStatus {
+  transcribe_available: boolean;
+  transcribe_backend: string;
+  youtube_logged_in: boolean;
+  cookies_present: boolean;
+}
+
+export interface AnalysisActionResponse {
+  ok: boolean;
+  message: string | null;
+}

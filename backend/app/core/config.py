@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     quartr_api_key: str = ""
     sec_edgar_user_agent: str = ""
     fundamentals_dir: str = ""
+    # 内容分析（yt-dlp 下载 + Whisper 转写）
+    content_analysis_dir: str = ""  # 产物落盘根目录，空则用 backend/data/content_analysis
+    whisper_backend: str = "auto"  # auto | mlx | openai
+    whisper_mlx_model: str = "mlx-community/whisper-large-v3-mlx"
+    whisper_model: str = "base"  # openai-whisper 模型规格
+    whisper_language: str = ""  # 空=自动检测
     nginx_conf_file: str = "nginx.http.conf"
     feishu_app_id: str = ""
     feishu_app_secret: str = ""

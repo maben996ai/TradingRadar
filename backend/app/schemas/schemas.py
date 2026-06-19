@@ -295,3 +295,73 @@ class FundamentalsSourceResult(BaseModel):
 class FundamentalsDownloadResponse(BaseModel):
     ticker: str
     results: list[FundamentalsSourceResult]
+
+
+# -- 内容分析（yt-dlp 下载 + Whisper 转写） --------------------------------
+
+
+class AnalysisDownloadRequest(BaseModel):
+    url: str
+    mode: Literal["video", "audio"] = "video"
+
+
+class AnalysisTranscribeRequest(BaseModel):
+    pass
+
+
+class AnalysisArtifactResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    type: str
+    stage: str
+    status: str
+    progress: float
+    filename: str | None = None
+    size: int | None = None
+    error: str | None = None
+    source_artifact_id: str | None = None
+    meta: dict | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime
+
+
+class AnalysisSourceResponse(BaseModel):
+    id: str
+    url: str
+    title: str
+    author: str | None = None
+    created_at: datetime
+    artifacts: list[AnalysisArtifactResponse]
+
+
+class AnalysisListResponse(BaseModel):
+    sources: list[AnalysisSourceResponse]
+    counts: dict[str, int]
+
+
+class AnalysisStatusResponse(BaseModel):
+    transcribe_available: bool
+    transcribe_backend: str
+    youtube_logged_in: bool
+    cookies_present: bool
+
+
+class AnalysisLoginCookiesRequest(BaseModel):
+    cookies: str
+
+
+class AnalysisLoginBrowserRequest(BaseModel):
+    browser: str
+    profile: str | None = None
+
+
+class AnalysisLoginResponse(BaseModel):
+    ok: bool
+    message: str
+
+
+class AnalysisActionResponse(BaseModel):
+    ok: bool
+    message: str | None = None

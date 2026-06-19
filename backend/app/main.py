@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     auth,
     calendar,
+    content_analysis,
     content_items,
     crawl_logs,
     data_sources,
@@ -60,3 +61,6 @@ app.include_router(macro.router, prefix="/api/macro", tags=["macro"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["fundamentals"])
 app.include_router(research.router, prefix="/api/research", tags=["research"])
+app.include_router(
+    content_analysis.router, prefix="/api/content-analysis", tags=["content-analysis"]
+)

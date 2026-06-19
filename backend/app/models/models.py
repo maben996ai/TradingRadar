@@ -236,3 +236,83 @@ class CrawlLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     data_source: Mapped[DataSource] = relationship(back_populates="crawl_logs")
+
+
+class ArtifactType(StrEnum):
+    VIDEO = "video"
+    AUDIO = "audio"
+    TEXT = "text"
+
+
+class ArtifactStage(StrEnum):
+    DOWNLOAD = "download"
+    TRANSCRIBE = "transcribe"
+
+
+class ArtifactStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    PROCESSING = "processing"
+    FINISHED = "finished"
+    ERROR = "error"
+    CANCELED = "canceled"
+
+
+class AnalysisSource(Base):
+    """内容分析来源：一个 YouTube URL / 视频，下挂若干产物（Artifact）。"""
+
+    __tablename__ = "analysis_sources"
+    __table_args__ = (
+        UniqueConstraint("user_id", "video_id", name="uq_analysis_sources_user_video"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True)
+    url: Mapped[str] = mapped_column(Text())
+    video_id: Mapped[str] = mapped_column(String(64), index=True)  # YouTube id 或 url 哈希
+    title: Mapped[str] = mapped_column(String(500))
+    author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    artifacts: Mapped[list["AnalysisArtifact"]] = relationship(
+        back_populates="source", cascade="all, delete-orphan"
+    )
+
+
+class AnalysisArtifact(Base):
+    """内容分析产物：video / audio（下载）或 text（转写），text 记录来源产物血缘。"""
+
+    __tablename__ = "analysis_artifacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    source_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("analysis_sources.id"), index=True
+    )
+    type: Mapped[ArtifactType] = mapped_column(
+        SqlEnum(ArtifactType, values_callable=lambda x: [e.value for e in x])
+    )
+    stage: Mapped[ArtifactStage] = mapped_column(
+        SqlEnum(ArtifactStage, values_callable=lambda x: [e.value for e in x])
+    )
+    status: Mapped[ArtifactStatus] = mapped_column(
+        SqlEnum(ArtifactStatus, values_callable=lambda x: [e.value for e in x]),
+        default=ArtifactStatus.QUEUED,
+    )
+    progress: Mapped[float] = mapped_column(Float(), default=0.0)
+    filename: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    filepath: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    error_log: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    # 血缘：text 产物记录其来源的音/视频产物
+    source_artifact_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("analysis_artifacts.id"), nullable=True
+    )
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    source: Mapped[AnalysisSource] = relationship(
+        back_populates="artifacts", foreign_keys=[source_id]
+    )

@@ -107,8 +107,42 @@ const messages = {
     },
     contentAnalysis: {
       eyebrow: "投研分析",
-      title: "投研分析",
-      description: "基于大模型的视频内容分析与投研洞察，即将上线。",
+      title: "内容分析",
+      description: "粘贴 YouTube 链接，下载音/视频并用 Whisper 转写为文本，作为投研分析素材。",
+      urlPlaceholder: "粘贴 YouTube 视频链接",
+      modeVideo: "视频 (mp4)",
+      modeAudio: "音频 (mp3)",
+      download: "下载",
+      transcribe: "转文本",
+      cancel: "终止",
+      delete: "删除",
+      retry: "重试",
+      viewText: "查看文本",
+      downloadFile: "下载文件",
+      empty: "还没有任何内容，粘贴链接开始分析。",
+      countSources: "来源",
+      countVideo: "视频",
+      countAudio: "音频",
+      countText: "文本",
+      statusQueued: "排队中",
+      statusRunning: "处理中",
+      statusProcessing: "合成中",
+      statusFinished: "已完成",
+      statusError: "失败",
+      statusCanceled: "已终止",
+      backendLabel: "转写后端",
+      backendUnavailable: "转写后端不可用（未安装 Whisper）",
+      youtubeLoggedIn: "YouTube 已登录",
+      youtubeNotLoggedIn: "YouTube 未登录（受限内容可能无法下载）",
+      cookiesLogin: "Cookies 登录",
+      cookiesPlaceholder: "粘贴 youtube.com 的 cookies（Netscape 格式）",
+      cookiesSubmit: "用 Cookies 登录",
+      loginSuccess: "登录成功",
+      loginFailed: "登录失败",
+      downloadFailed: "下载失败，请稍后重试",
+      confirmDelete: "确定删除该项？",
+      textPreview: "文本预览",
+      close: "关闭",
     },
     industryReport: {
       eyebrow: "行业研报",
@@ -327,8 +361,43 @@ const messages = {
     },
     contentAnalysis: {
       eyebrow: "Research Analysis",
-      title: "Research Analysis",
-      description: "AI-powered content analysis and investment insights — coming soon.",
+      title: "Content Analysis",
+      description:
+        "Paste a YouTube link to download audio/video and transcribe it with Whisper as research material.",
+      urlPlaceholder: "Paste a YouTube video link",
+      modeVideo: "Video (mp4)",
+      modeAudio: "Audio (mp3)",
+      download: "Download",
+      transcribe: "Transcribe",
+      cancel: "Cancel",
+      delete: "Delete",
+      retry: "Retry",
+      viewText: "View text",
+      downloadFile: "Download file",
+      empty: "Nothing yet — paste a link to start.",
+      countSources: "Sources",
+      countVideo: "Video",
+      countAudio: "Audio",
+      countText: "Text",
+      statusQueued: "Queued",
+      statusRunning: "Running",
+      statusProcessing: "Processing",
+      statusFinished: "Done",
+      statusError: "Failed",
+      statusCanceled: "Canceled",
+      backendLabel: "Transcribe backend",
+      backendUnavailable: "Transcribe backend unavailable (Whisper not installed)",
+      youtubeLoggedIn: "YouTube signed in",
+      youtubeNotLoggedIn: "YouTube not signed in (restricted content may fail)",
+      cookiesLogin: "Cookies login",
+      cookiesPlaceholder: "Paste youtube.com cookies (Netscape format)",
+      cookiesSubmit: "Sign in with cookies",
+      loginSuccess: "Signed in",
+      loginFailed: "Login failed",
+      downloadFailed: "Download failed, please retry",
+      confirmDelete: "Delete this item?",
+      textPreview: "Text preview",
+      close: "Close",
     },
     industryReport: {
       eyebrow: "Industry Reports",
@@ -448,7 +517,7 @@ const messages = {
 } as const;
 
 type MessageTree = typeof messages;
-type MessageKey =
+export type MessageKey =
   | "app.localeLabel"
   | "app.switchToChinese"
   | "app.switchToEnglish"
@@ -542,6 +611,40 @@ type MessageKey =
   | "contentAnalysis.eyebrow"
   | "contentAnalysis.title"
   | "contentAnalysis.description"
+  | "contentAnalysis.urlPlaceholder"
+  | "contentAnalysis.modeVideo"
+  | "contentAnalysis.modeAudio"
+  | "contentAnalysis.download"
+  | "contentAnalysis.transcribe"
+  | "contentAnalysis.cancel"
+  | "contentAnalysis.delete"
+  | "contentAnalysis.retry"
+  | "contentAnalysis.viewText"
+  | "contentAnalysis.downloadFile"
+  | "contentAnalysis.empty"
+  | "contentAnalysis.countSources"
+  | "contentAnalysis.countVideo"
+  | "contentAnalysis.countAudio"
+  | "contentAnalysis.countText"
+  | "contentAnalysis.statusQueued"
+  | "contentAnalysis.statusRunning"
+  | "contentAnalysis.statusProcessing"
+  | "contentAnalysis.statusFinished"
+  | "contentAnalysis.statusError"
+  | "contentAnalysis.statusCanceled"
+  | "contentAnalysis.backendLabel"
+  | "contentAnalysis.backendUnavailable"
+  | "contentAnalysis.youtubeLoggedIn"
+  | "contentAnalysis.youtubeNotLoggedIn"
+  | "contentAnalysis.cookiesLogin"
+  | "contentAnalysis.cookiesPlaceholder"
+  | "contentAnalysis.cookiesSubmit"
+  | "contentAnalysis.loginSuccess"
+  | "contentAnalysis.loginFailed"
+  | "contentAnalysis.downloadFailed"
+  | "contentAnalysis.confirmDelete"
+  | "contentAnalysis.textPreview"
+  | "contentAnalysis.close"
   | "industryReport.eyebrow"
   | "industryReport.title"
   | "industryReport.description"
