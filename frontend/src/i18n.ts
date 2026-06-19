@@ -16,6 +16,7 @@ const messages = {
       dataSources: "信源管理",
       controlCenter: "控制中心",
       contentAnalysis: "投研分析",
+      contentAnalysisItem: "内容分析",
       signOut: "退出登录",
       searchPlaceholder: "搜索信源、关键词…",
       sectionSources: "信源",
@@ -270,6 +271,7 @@ const messages = {
       dataSources: "Sources",
       controlCenter: "Control Center",
       contentAnalysis: "Research Analysis",
+      contentAnalysisItem: "Content Analysis",
       signOut: "Sign out",
       searchPlaceholder: "Search sources, keywords…",
       sectionSources: "Sources",
@@ -524,6 +526,7 @@ export type MessageKey =
   | "nav.dataSources"
   | "nav.controlCenter"
   | "nav.contentAnalysis"
+  | "nav.contentAnalysisItem"
   | "nav.signOut"
   | "nav.searchPlaceholder"
   | "nav.sectionSources"
