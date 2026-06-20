@@ -1,0 +1,37 @@
+{
+  "project": "TradingRadar",
+  "branchName": "codex/example-feature",
+  "changeName": "example-feature",
+  "description": "示例功能：说明本次开发目标。",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "后端接口",
+      "description": "As a developer, I want a backend API so that the frontend can consume data.",
+      "acceptanceCriteria": [
+        "新增 schema 和 API 路由",
+        "业务逻辑放在 services 层",
+        "按当前用户过滤数据",
+        "cd backend && python -m pytest -q 通过",
+        "cd backend && ruff check . 通过"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "前端页面",
+      "description": "As a user, I want to use the feature in the UI so that I can complete the workflow.",
+      "acceptanceCriteria": [
+        "新增 API client 方法",
+        "页面包含 loading / empty / error / success 状态",
+        "cd frontend && npm run type-check 通过",
+        "需浏览器验证：打开目标页面，完成核心操作并看到成功反馈"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
