@@ -265,3 +265,52 @@ async def test_run_transcribe_success(
         assert await check.get(AnalysisArtifact, media.id) is None
         assert refreshed.source_artifact_id is None
         assert refreshed.meta.get("deleted_source")
+
+
+# -- US-001：软删除字段 + 新增 schema 契约 --------------------------------
+
+
+async def test_analysis_source_has_deleted_at_default_null(client, auth_headers, db):
+    """新增 deleted_at 字段默认 NULL，向后兼容。"""
+    uid = await _user_id(db)
+    src = await store.get_or_create_source(db, uid, "https://youtu.be/abcdefghijk")
+    assert hasattr(src, "deleted_at")
+    assert src.deleted_at is None
+
+
+def test_analysis_probe_response_schema():
+    from app.schemas.schemas import AnalysisProbeResponse
+
+    for state in ("logged_in", "logged_out", "inconclusive"):
+        r = AnalysisProbeResponse(state=state, ok=True, message="x")
+        assert r.state == state
+        assert r.ok is True
+
+
+def test_analysis_deleted_source_response_from_attributes():
+    from datetime import datetime, timezone
+
+    from app.models.models import AnalysisSource
+    from app.schemas.schemas import AnalysisDeletedSourceResponse
+
+    now = datetime.now(timezone.utc)
+    src = AnalysisSource(
+        id="s1",
+        user_id="u1",
+        url="https://youtu.be/abcdefghijk",
+        video_id="abcdefghijk",
+        title="t",
+        author=None,
+        created_at=now,
+        deleted_at=now,
+    )
+    r = AnalysisDeletedSourceResponse.model_validate(src)
+    assert r.id == "s1"
+    assert r.deleted_at == now
+
+
+def test_analysis_from_content_item_request_default_mode():
+    from app.schemas.schemas import AnalysisFromContentItemRequest
+
+    assert AnalysisFromContentItemRequest().mode == "video"
+    assert AnalysisFromContentItemRequest(mode="audio").mode == "audio"
