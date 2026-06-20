@@ -29,3 +29,6 @@ frontend/dist/
 .idea/
 .vscode/
 *.swp
+
+# Agent Team 子 agent 交接报告（transient，不入库）
+scripts/ralph/reports/
