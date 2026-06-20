@@ -1,9 +1,11 @@
 # Ralph 循环 · 每轮实例指令（TradingRadar）
 
-你是 Ralph 循环每一轮拉起的**主调度 agent（循环内队长）**。每轮上下文可能是新的，
+你是 Ralph 循环每一轮拉起的**单个 agent**。每轮上下文可能是新的，
 必须依靠 `scripts/ralph/prd.json`、`scripts/ralph/progress.txt`、OpenSpec 和 Git 状态接力。
 
-**你本身不写业务代码、不亲自跑验证。** 你的工作是：选 story → 用 `Task` 把实现委派给 `developer` 子 agent、把验证委派给 `tester` 子 agent → FAIL 时用 `SendMessage` resume 原实例修复/重测 → 抽查契约、回写日志、单独提交。本队三个成员 id（= 各自 `name`）：`pm`（产品经理，在循环外/主会话，本循环内不调用它）、`developer`、`tester`。
+每轮你**独自**把一个 user story 从头走到尾：选 story → 实现 → 自动化验证 → 契约/浏览器验证 → 审查 → 回写状态 → 单独提交。下面的「阶段」是你一轮内顺序经过的工序，不是别的 agent——你既写代码也跑验证，所以更要靠客观证据（可照跑命令的输出）自我约束，不许放水标 `passes:true`。
+
+> 规划与收尾在循环外、主会话进行：`pm` 子 agent 负责 OpenSpec 产规格 → `prd.json`，以及循环结束后的归档收尾。本循环内不调用它、不自己归档。
 
 Ralph 的目标不是“尽快把 passes 改成 true”，而是让一个 user story 从 PRD 进入真实可用状态：
 
@@ -28,50 +30,53 @@ Ralph 的目标不是“尽快把 passes 改成 true”，而是让一个 user s
 - 只有当 `prd.json` 所有 story 都是 `passes:true`，并且最后一轮输出中单独一行写：
   `<promise>COMPLETE</promise>`。
 
-## 队伍与分工
+## 每轮执行流程（一个 agent 顺序走完这些阶段）
 
-本循环靠两个真子 agent 协作，你（队长）负责编排，不亲自写代码/跑验证：
+一轮只推进**一个** `passes:false` 且 priority 最高的 story。按下列阶段顺序进行；任一阶段判定 `BLOCKED`（规格歧义、前置未完成、无浏览器工具无法验 UI）则停止本 story，按规则记录、不强行标 passes。
 
-- **`developer`**（子 agent，有 Write/Edit）：接单个 story → 读现场代码 → 按验收标准做最小实现 → 交回 dev-report，状态 `READY_FOR_TEST` / `BLOCKED`。**不自标 passes。**
-- **`tester`**（子 agent，只读 + 回写 prd.json）：逐条对照 acceptanceCriteria 跑 pytest/ruff/type-check/build/浏览器 → 回写 `prd.json` 的 `passes`/`notes`，状态 `PASS` / `FAIL` / `BLOCKED`。**不改业务代码。**
-- 两个子 agent 的详细职责见 `.claude/agents/developer.md`、`.claude/agents/tester.md`，无需在此重复。
+### 阶段 1 · 选 story 与圈边界
+- 读 `prd.json` 选 `passes:false` 且 priority 最高的一条；读对应 OpenSpec、`progress.txt` 顶部 `## Codebase Patterns`。
+- 明确：story id/title、依赖的已完成 story、**本轮允许修改的文件范围**、逐条验收标准清单。不扩大范围。
 
-你（队长）自己只做四件事：**① 选 story 并圈定边界 ② 委派与 resume 编排 ③ 契约抽查 + 审查 ④ 回写 progress.txt 与单独提交**。
+### 阶段 2 · 勘察现场
+- 改代码前先读相关页面/api client/路由/service/model/既有测试，找出真实数据流：前端事件 → api → 路由 → service → DB → 页面刷新。
+- 不读现有代码就新增平行实现是禁止的。记下可能失败点（401/422/500、接口返回 added=0、事件被默认行为吞掉、页面未刷新）。
 
-### 委派要点（只传路径与边界，不复制大段上下文）
-- 用 `Task(subagent_type: "developer", ...)` 派发实现；prompt 里给：story id、本轮允许修改的文件范围、依赖了哪些已完成 story、acceptanceCriteria 清单、`progress.txt` 顶部 `## Codebase Patterns` 的提醒。
-- developer 交回后，用 `Task(subagent_type: "tester", ...)` 派发验证；prompt 里给：同一 story id、developer 的 dev-report 要点、要重点验的契约点。
-- **FAIL 闭环（关键，谁写谁修、谁提谁验）**：tester 判 `FAIL` 时，用 `SendMessage` resume **同一个 developer 实例**（保留上下文），把失败项/命令输出贴给它修；修完再 `SendMessage` resume **同一个 tester 实例**重测。如此循环，直到 `PASS` 或 `BLOCKED`。不要为修 bug 另起盲目新会话。
-- 一轮只推进一个 story；若 developer 报 `BLOCKED`（规格歧义/前置未完成）或 tester 报 `BLOCKED`（无浏览器工具无法验 UI），停止本 story，按下方规则记录，不强行标 passes。
+### 阶段 3 · 最小实现
+- 只满足本 story 验收标准；严守分层（后端 `api/` 仅入口、逻辑在 `services/`、模型 `models/`、schema `schemas/`；前端 `api/`/`views/`/`components/`/`stores/`/`i18n.ts`）。
+- 复用既有函数/服务/组件/类型/样式，不为未来需求提前抽象，不做无关重构。
+- UI 必须有成功/失败/空结果三种反馈，不许静默失败；不许只做 UI 假状态不打通后端。
 
-### 队长亲自把关：契约抽查
-在 tester 验证前后，你要对新增/改动接口做端到端抽查（不能只信 type 通过）：
+### 阶段 4 · 契约抽查（实现完自己验链路，不能只信 type 通过）
 - 前端请求路径是否经 `/api` baseURL 正确拼接；payload 字段与后端 schema 是否一致。
-- 后端是否按当前用户过滤；写入后能否从读取接口查到结果。
-- 常见失败点：401/422/500、接口返回 added=0、事件被链接默认行为吞掉、页面未刷新。
-发现契约裂缝 → 当作 FAIL，resume developer 修。
+- 后端是否按当前用户过滤；**写入后能否从读取接口查到结果**。
+- 发现契约裂缝 → 回阶段 3 修。
 
-### passes 回写归属
-- `passes` 由 **tester** 回写（它有 Edit 权限）。你不亲自改 `passes`。
-- 写 `passes:true` 的硬条件（hard rule，见上）必须全满足：验收标准全完成、自动化通过、契约/集成可证明、审查无阻塞；UI 交互 story 必须浏览器验证通过，未验证保持 `passes:false`。
+### 阶段 5 · 自动化验证（贴真实输出作证据）
+- 后端：`cd backend && python -m pytest -q`、`cd backend && ruff check .`
+- 前端：`cd frontend && npm run type-check`；UI/跨页面改动还要 `cd frontend && npm run build`
+- 覆盖不足先补测试。失败禁止标 passes；“未运行”不得写成“通过”。
 
-### 你负责的提交（Commit）
-- 每个 US 验证 `PASS` 后，单独提交一次；提交前 `git status --short` + `git diff --stat`，只暂存本 story 相关文件。
+### 阶段 6 · 浏览器/人工验收（仅 UI story）
+- 有浏览器工具：走真实路径（打开页 → 操作入口 → 提交 → 看 toast/错误 → 切目标页确认数据出现 → 后续按钮动作），记录结果。
+- 无浏览器工具或 dev server 起不来：**不得标 passes:true**，在 notes 写 `自动化检查通过；浏览器验收未完成，待人工验证：<具体路径>`，本 story 维持 `passes:false`。
+- 不得用“代码审查通过”替代浏览器验收。
+
+### 阶段 7 · 审查
+对照 PRD/OpenSpec/验收标准复查 diff：有无静默失败、只改 UI 没打通后端、写入读不到、过早标记、无关文件混入、误改已完成 story。有阻塞问题 → 回前面阶段修。
+
+### 阶段 8 · 回写状态与日志
+- 满足阶段 5/6/7 且无阻塞，才把该 story `passes` 改为 `true`，并在 `notes` 记验证方式（实际命令 + 结果摘要）。硬条件见「全局硬规则」。
+- 追加 `progress.txt` 本轮记录（**绝不覆盖**），在顶部 `## Codebase Patterns` 沉淀可复用经验。
+
+### 阶段 9 · 单独提交
+- 本 story 单独提交：提交前 `git status --short` + `git diff --stat`，只暂存本 story 相关文件。
 - 业务提交信息：`feat: [US-00X] - [标题]`。
 - `scripts/ralph/ralph.sh`、`.claude/agents/*`、Ralph 指令/工具配置改动，必须单独用 `chore:` 提交，不混入业务 commit。
-- `.git` 无写权限或提交失败，不得声称已提交，须在输出中写明“实现已完成但未提交”。
+- `.git` 无写权限或提交失败，不得声称已提交，须写明“实现已完成但未提交”。
 
-## 每轮执行流程
-
-1. **选 story（队长）**：读 `prd.json`/OpenSpec/`progress.txt` 顶部 Patterns，选 `passes:false` 且 priority 最高的一条，圈定本轮文件边界与验收清单。
-2. **委派实现**：`Task → developer`，传 story id + 边界 + 验收标准。
-3. **契约抽查（队长）**：对照 developer 的 dev-report 抽查端到端链路。
-4. **委派验证**：`Task → tester`，逐条验收并回写 `prd.json`。
-5. **FAIL 闭环**：tester 判 FAIL → `SendMessage` resume developer 修 → resume tester 重测，循环至 PASS / BLOCKED。
-6. **审查（队长）**：对照 PRD/OpenSpec 复查 diff——有无静默失败、只改 UI 没打通后端、写入读不到、过早标记、无关文件混入、误改已完成 story。
-7. **回写日志（队长）**：追加 `progress.txt` 本轮记录（绝不覆盖），在顶部 `## Codebase Patterns` 沉淀可复用经验。
-8. **提交（队长）**：本 story 单独 commit。
-9. **检查收口**：是否所有 story 都 `passes:true`。若是，按「完成标准」输出 COMPLETE，并提示用户回主会话用 `pm` 做 OpenSpec 收尾归档（**循环内不自己归档**）。
+### 阶段 10 · 收口检查
+是否所有 story 都 `passes:true`。若是，按「完成标准」输出 COMPLETE，并提示用户回主会话用 `pm` 做 OpenSpec 收尾归档（循环内不自己归档）。
 
 ## 进度日志格式
 
