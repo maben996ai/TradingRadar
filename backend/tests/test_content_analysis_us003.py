@@ -199,6 +199,47 @@ async def test_purge_source_not_found(client, auth_headers):
     assert resp.status_code == 404
 
 
+async def test_source_routes_reject_other_user_with_404(
+    client, auth_headers, db, tmp_path, monkeypatch
+):
+    """越权访问他人来源：软删除/还原/彻底清除路由均返回 404，且不动他人数据。"""
+    monkeypatch.setattr(store, "base_dir", lambda: tmp_path)
+    # 用别的 user_id 建来源（不是当前登录用户）
+    other = User(email="owner2@example.com", password_hash="x", display_name="Owner2")
+    db.add(other)
+    await db.commit()
+    await db.refresh(other)
+    src = await store.get_or_create_source(db, other.id, "https://youtu.be/abcdefghijk")
+
+    # 软删除（DELETE 默认）越权 → 404
+    r1 = await client.delete(
+        f"/api/content-analysis/sources/{src.id}", headers=auth_headers
+    )
+    assert r1.status_code == 404
+    # 彻底删除（DELETE?purge=true）越权 → 404
+    r2 = await client.delete(
+        f"/api/content-analysis/sources/{src.id}?purge=true", headers=auth_headers
+    )
+    assert r2.status_code == 404
+    # 还原越权 → 404
+    r3 = await client.post(
+        f"/api/content-analysis/sources/{src.id}/restore", headers=auth_headers
+    )
+    assert r3.status_code == 404
+    # purge 路由越权 → 404
+    r4 = await client.post(
+        f"/api/content-analysis/sources/{src.id}/purge", headers=auth_headers
+    )
+    assert r4.status_code == 404
+
+    # 他人来源未被破坏（仍在库且未软删除）
+    from app.models.models import AnalysisSource
+
+    refreshed = await db.get(AnalysisSource, src.id)
+    assert refreshed is not None
+    assert refreshed.deleted_at is None
+
+
 # -- POST /from-content-item/{id} ------------------------------------------
 
 
