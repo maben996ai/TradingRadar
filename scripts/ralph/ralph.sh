@@ -1,12 +1,14 @@
 #!/bin/bash
 # Ralph Wiggum - Long-running AI agent loop
-# Usage: ./ralph.sh [--tool amp|claude] [max_iterations]
+# Usage: ./ralph.sh [--tool amp|claude|codex] [max_iterations]
+# For Codex commits, set RALPH_CODEX_SANDBOX=danger-full-access.
 
 set -e
 
 # Parse arguments
 TOOL="amp"  # Default to amp for backwards compatibility
 MAX_ITERATIONS=10
+CODEX_SANDBOX="${RALPH_CODEX_SANDBOX:-workspace-write}"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -29,15 +31,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate tool choice
-if [[ "$TOOL" != "amp" && "$TOOL" != "claude" ]]; then
-  echo "Error: Invalid tool '$TOOL'. Must be 'amp' or 'claude'."
+if [[ "$TOOL" != "amp" && "$TOOL" != "claude" && "$TOOL" != "codex" ]]; then
+  echo "Error: Invalid tool '$TOOL'. Must be 'amp', 'claude', or 'codex'."
+  exit 1
+fi
+
+if [[ "$CODEX_SANDBOX" != "read-only" && "$CODEX_SANDBOX" != "workspace-write" && "$CODEX_SANDBOX" != "danger-full-access" ]]; then
+  echo "Error: Invalid RALPH_CODEX_SANDBOX '$CODEX_SANDBOX'. Must be 'read-only', 'workspace-write', or 'danger-full-access'."
   exit 1
 fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PRD_FILE="$SCRIPT_DIR/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
+
+if [[ "$TOOL" == "codex" ]]; then
+  if [[ -n "${CODEX_BIN:-}" ]]; then
+    :
+  elif command -v codex >/dev/null 2>&1; then
+    CODEX_BIN="$(command -v codex)"
+  elif [[ -x "/Applications/Codex.app/Contents/Resources/codex" ]]; then
+    CODEX_BIN="/Applications/Codex.app/Contents/Resources/codex"
+  else
+    echo "Error: codex command not found. Install Codex CLI or set CODEX_BIN=/path/to/codex."
+    exit 1
+  fi
+fi
 
 # Archive previous run if branch changed
 if [ -f "$PRD_FILE" ] && [ -f "$LAST_BRANCH_FILE" ]; then
@@ -79,7 +100,11 @@ if [ ! -f "$PROGRESS_FILE" ]; then
   echo "---" >> "$PROGRESS_FILE"
 fi
 
-echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS"
+if [[ "$TOOL" == "codex" ]]; then
+  echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS - Codex sandbox: $CODEX_SANDBOX"
+else
+  echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS"
+fi
 
 for i in $(seq 1 $MAX_ITERATIONS); do
   echo ""
@@ -90,13 +115,16 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   # Run the selected tool with the ralph prompt
   if [[ "$TOOL" == "amp" ]]; then
     OUTPUT=$(cat "$SCRIPT_DIR/prompt.md" | amp --dangerously-allow-all 2>&1 | tee /dev/stderr) || true
-  else
+  elif [[ "$TOOL" == "claude" ]]; then
     # Claude Code: use --dangerously-skip-permissions for autonomous operation, --print for output
     OUTPUT=$(claude --dangerously-skip-permissions --print < "$SCRIPT_DIR/CLAUDE.md" 2>&1 | tee /dev/stderr) || true
+  else
+    # Codex CLI: run non-interactively from the repository root.
+    OUTPUT=$("$CODEX_BIN" --ask-for-approval never exec --cd "$REPO_ROOT" --sandbox "$CODEX_SANDBOX" < "$SCRIPT_DIR/CLAUDE.md" 2>&1 | tee /dev/stderr) || true
   fi
   
   # Check for completion signal
-  if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
+  if echo "$OUTPUT" | grep -Eq '^[[:space:]]*<promise>COMPLETE</promise>[[:space:]]*$'; then
     echo ""
     echo "Ralph completed all tasks!"
     echo "Completed at iteration $i of $MAX_ITERATIONS"
