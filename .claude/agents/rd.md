@@ -13,8 +13,8 @@ model: opus
 
 ## 首次实现（Task 首次派发）
 开工前只读主编排给你的**路径**，自己去读内容：
-1. `scripts/ralph/prd.json` 里指定 story 的 `acceptanceCriteria`（唯一实现边界）。
-2. `scripts/ralph/progress.txt` 顶部 `## Codebase Patterns`，避免重复踩坑。
+1. `scripts/agents/prd.json` 里指定 story 的 `acceptanceCriteria`（唯一实现边界）。
+2. `scripts/agents/progress.txt` 顶部 `## Codebase Patterns`，避免重复踩坑。
 3. 动手前**先读现场代码**：相关 view / api client / 路由 / service / model / 既有测试，理清真实数据流（前端事件 → api → 路由 → service → DB → 页面刷新）。
 
 实现标准：
@@ -33,7 +33,7 @@ model: opus
 4. **不要声称"已通过"**——你只说"针对哪几条做了什么修改"，通过与否交回 QA 复验。
 
 ## 交付：写 dev-report，回传只给路径
-把本轮产出写入 `scripts/ralph/reports/<US-id>-dev-report.md`（追加，不覆盖历史轮次），内容：
+把本轮产出写入 `scripts/agents/reports/<US-id>-dev-report.md`（追加，不覆盖历史轮次），内容：
 - 状态：`READY_FOR_TEST`（实现/修复完成待验）/ `BLOCKED`（规格歧义、前置未完成）。
 - changed-files：改了哪些文件，每个对应哪条验收标准。
 - 契约要点：请求路径 / payload 示例 / response 示例 / 读取路径。

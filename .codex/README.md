@@ -25,7 +25,7 @@
 2. 开发阶段：用户要求“用 Codex build-feature 开发”。主 agent 按 `workflows/build-feature.md` 和 `agents/orchestrator.md` 工作。
 3. 收尾阶段：所有 story PASS 后，主 agent提示用户归档 OpenSpec，必要时提交/推送。
 
-## 与 Claude/Ralph 的区别
+## 与 Claude 编排的区别
 
 - Codex 不依赖 Claude `Task(subagent_type)`，而是由主 agent 调 `multi_agent_v1.spawn_agent`，用 prompt 加载对应角色说明。
 - Codex 子 agent 没有仓库内固定 agent registry；这些 `.md` 文件是角色契约和提示词源，由主 agent 读取后传给子 agent。

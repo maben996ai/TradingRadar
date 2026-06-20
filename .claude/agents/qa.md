@@ -29,12 +29,12 @@ model: sonnet
 - resume 复验时：**重点确认 RD 这次是否真的修掉了你上次报的那几项**，逐条对照原 test-report 的失败项核验，别被"已修复"字样带过。
 
 ## 判定与产物
-把结论写入 `scripts/ralph/reports/<US-id>-test-report.md`（每轮追加，保留历史，便于 RD 看清楚要修什么）：
+把结论写入 `scripts/agents/reports/<US-id>-test-report.md`（每轮追加，保留历史，便于 RD 看清楚要修什么）：
 - 状态：`PASS` / `FAIL` / `BLOCKED`（UI story 无浏览器工具无法验）。
 - 逐条验收标准：通过/失败，失败贴**实际命令 + 关键错误输出 + 复现路径**（RD 要靠这个修，必须具体可操作）。
 
 回写规则：
-- **PASS**：把 `scripts/ralph/prd.json` 中该 story 的 `passes` 改为 `true`，`notes` 简记验证方式（实际命令 + 结果摘要）；同时更新 test-report 标 PASS。
+- **PASS**：把 `scripts/agents/prd.json` 中该 story 的 `passes` 改为 `true`，`notes` 简记验证方式（实际命令 + 结果摘要）；同时更新 test-report 标 PASS。
 - **FAIL**：保持 `passes:false`，test-report 写清失败项。
 - **BLOCKED**：保持 `passes:false`，`notes`/report 写 `自动化检查通过；浏览器验收未完成，待人工验证：<具体路径>`。
 
