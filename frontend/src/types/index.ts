@@ -248,3 +248,22 @@ export interface AnalysisActionResponse {
   ok: boolean;
   message: string | null;
 }
+
+// cookies 活体探测三态：已登录 / 已失效 / 无法判定
+export type AnalysisProbeState = "logged_in" | "logged_out" | "inconclusive";
+
+export interface AnalysisProbeResponse {
+  state: AnalysisProbeState;
+  ok: boolean;
+  message: string | null;
+}
+
+// 回收站条目：已软删除的来源
+export interface AnalysisDeletedSource {
+  id: string;
+  url: string;
+  title: string;
+  author: string | null;
+  created_at: string;
+  deleted_at: string | null;
+}
