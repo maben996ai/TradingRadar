@@ -242,6 +242,8 @@ export interface AnalysisStatus {
   transcribe_backend: string;
   youtube_logged_in: boolean;
   cookies_present: boolean;
+  yt_dlp_available: boolean;
+  ffmpeg_available: boolean;
 }
 
 export interface AnalysisActionResponse {

@@ -296,6 +296,8 @@ async def status(
         transcribe_backend=backends.active_model_label(),
         youtube_logged_in=cookie_ok,
         cookies_present=cookies.cookies_present(),
+        yt_dlp_available=backends.yt_dlp_available(),
+        ffmpeg_available=backends.ffmpeg_available(),
     )
 
 

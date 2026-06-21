@@ -346,6 +346,8 @@ class AnalysisStatusResponse(BaseModel):
     transcribe_backend: str
     youtube_logged_in: bool
     cookies_present: bool
+    yt_dlp_available: bool
+    ffmpeg_available: bool
 
 
 class AnalysisLoginCookiesRequest(BaseModel):
