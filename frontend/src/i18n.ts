@@ -72,6 +72,10 @@ const messages = {
       statSources: "个信源",
       placeholderHint: "该板块即将接入真实数据，当前为示例内容。",
       placeholderSummary: "后端数据源接入后，这里将展示来自金融时讯、宏观市场等渠道的实时内容。",
+      downloadToAnalysis: "下载/转写",
+      downloadQueued: "已加入下载，前往「内容分析」查看进度",
+      downloadFailed: "下载失败，请稍后重试",
+      goToAnalysis: "前往内容分析",
     },
     dataSources: {
       eyebrow: "信源",
@@ -154,6 +158,7 @@ const messages = {
       probeLoggedOut: "登录已失效，请重新导入",
       probeInconclusive: "无法判定登录状态，请稍后重试",
       probeFailed: "检测失败，请稍后重试",
+      depsMissing: "下载/转写组件缺失，已暂停相关操作（请安装后重试）",
       recycleBin: "回收站",
       recycleBinEmpty: "回收站为空",
       restore: "还原",
@@ -349,6 +354,10 @@ const messages = {
       statSources: "sources",
       placeholderHint: "This section will connect to live data soon — showing sample content for now.",
       placeholderSummary: "Once data sources are connected, real-time content from finance news and macro market channels will appear here.",
+      downloadToAnalysis: "Download / Transcribe",
+      downloadQueued: "Queued for download — open Content Analysis to track progress",
+      downloadFailed: "Download failed, please retry",
+      goToAnalysis: "Go to Content Analysis",
     },
     dataSources: {
       eyebrow: "Sources",
@@ -432,6 +441,7 @@ const messages = {
       probeLoggedOut: "Sign-in expired, please re-import",
       probeInconclusive: "Cannot determine sign-in status, please retry",
       probeFailed: "Check failed, please retry",
+      depsMissing: "Download/transcribe components missing; related actions are disabled (install and retry)",
       recycleBin: "Recycle bin",
       recycleBinEmpty: "Recycle bin is empty",
       restore: "Restore",
@@ -624,6 +634,10 @@ export type MessageKey =
   | "feed.statSources"
   | "feed.placeholderHint"
   | "feed.placeholderSummary"
+  | "feed.downloadToAnalysis"
+  | "feed.downloadQueued"
+  | "feed.downloadFailed"
+  | "feed.goToAnalysis"
   | "dataSources.eyebrow"
   | "dataSources.title"
   | "dataSources.addPlaceholder"
@@ -702,6 +716,7 @@ export type MessageKey =
   | "contentAnalysis.probeLoggedOut"
   | "contentAnalysis.probeInconclusive"
   | "contentAnalysis.probeFailed"
+  | "contentAnalysis.depsMissing"
   | "contentAnalysis.recycleBin"
   | "contentAnalysis.recycleBinEmpty"
   | "contentAnalysis.restore"
