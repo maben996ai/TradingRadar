@@ -31,7 +31,9 @@ python-multipart==0.0.20
 
 # 内容分析：YouTube 下载（运行需系统安装 ffmpeg）
 yt-dlp>=2025.1.1
-# 音频转文本后端（任选其一按部署环境安装，未在此固定版本）：
-#   pip install mlx-whisper      # Apple Silicon 优先后端
-#   pip install openai-whisper   # 跨平台回退后端（会拉入 torch）
+# 音频转文本后端（对齐 yt-dlp-x：auto 优先 mlx、回退 openai）：
+#   mlx-whisper 是 Apple Silicon 专用、无 Linux wheel，无法装进 Linux 镜像，
+#   故仅在 macOS 宿主直跑后端时手动 `pip install mlx-whisper`（走 Apple GPU，更快）。
+#   Linux/docker 环境用跨平台回退 openai-whisper（CPU，拉入 torch）。
+openai-whisper
 

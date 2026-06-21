@@ -6,6 +6,7 @@
 
 import hashlib
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select
@@ -159,7 +160,10 @@ async def list_sources(
     stmt = (
         select(AnalysisSource)
         .options(selectinload(AnalysisSource.artifacts))
-        .where(AnalysisSource.user_id == user_id)
+        .where(
+            AnalysisSource.user_id == user_id,
+            AnalysisSource.deleted_at.is_(None),
+        )
         .order_by(AnalysisSource.created_at.desc())
     )
     sources = list(await db.scalars(stmt))
@@ -222,3 +226,55 @@ async def remove_source(
     await db.delete(src)
     await db.commit()
     return True
+
+
+async def soft_delete_source(db: AsyncSession, sid: str, user_id: str) -> bool:
+    """移入回收站：删除产物记录与磁盘文件，保留来源条目并置 deleted_at。
+
+    按 user_id 校验归属，越权（不存在/非本人）返回 False。
+    """
+    src = await db.scalar(
+        select(AnalysisSource)
+        .options(selectinload(AnalysisSource.artifacts))
+        .where(AnalysisSource.id == sid, AnalysisSource.user_id == user_id)
+    )
+    if src is None:
+        return False
+    for a in list(src.artifacts):
+        _delete_file(a.filepath)
+        await db.delete(a)
+    src.deleted_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
+async def restore_source(db: AsyncSession, sid: str, user_id: str) -> bool:
+    """从回收站还原：清空 deleted_at（产物已在软删除时清除，不恢复）。"""
+    src = await db.scalar(
+        select(AnalysisSource).where(
+            AnalysisSource.id == sid, AnalysisSource.user_id == user_id
+        )
+    )
+    if src is None:
+        return False
+    src.deleted_at = None
+    await db.commit()
+    return True
+
+
+async def purge_source(db: AsyncSession, sid: str, user_id: str) -> bool:
+    """彻底删除：永久移除来源记录及其全部产物文件。"""
+    return await remove_source(db, sid, user_id, delete_files=True)
+
+
+async def deleted_sources(db: AsyncSession, user_id: str) -> list[AnalysisSource]:
+    """回收站列表：本人已软删除的来源，按删除时间倒序。"""
+    stmt = (
+        select(AnalysisSource)
+        .where(
+            AnalysisSource.user_id == user_id,
+            AnalysisSource.deleted_at.is_not(None),
+        )
+        .order_by(AnalysisSource.deleted_at.desc())
+    )
+    return list(await db.scalars(stmt))

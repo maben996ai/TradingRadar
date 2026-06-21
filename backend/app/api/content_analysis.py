@@ -3,6 +3,7 @@
 移植自 yt-dlp-x 后端，遵循 TradingRadar 分层：路由仅做入口，逻辑在 services。
 """
 
+import asyncio
 import subprocess
 import sys
 
@@ -12,19 +13,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models.models import ArtifactStatus, ArtifactType, User
+from app.models.models import ArtifactStatus, ArtifactType, ContentItem, DataSource, SourceType, User
 from app.schemas.schemas import (
     AnalysisActionResponse,
     AnalysisArtifactResponse,
+    AnalysisDeletedSourceResponse,
     AnalysisDownloadRequest,
+    AnalysisFromContentItemRequest,
     AnalysisListResponse,
     AnalysisLoginBrowserRequest,
     AnalysisLoginCookiesRequest,
     AnalysisLoginResponse,
+    AnalysisProbeResponse,
     AnalysisSourceResponse,
     AnalysisStatusResponse,
 )
 from app.services.content_analysis import backends, cookies, runner, store
+
+# 活体探测网络超时（秒）：探测请求在线程中执行，避免阻塞事件循环。
+_PROBE_TIMEOUT = 20
+
+# live_probe 三态映射到对外 state 字符串。
+_PROBE_STATE = {True: "logged_in", False: "logged_out", None: "inconclusive"}
 
 router = APIRouter()
 
@@ -192,17 +202,85 @@ async def delete_artifact(
     return AnalysisActionResponse(ok=True)
 
 
+@router.get("/sources/deleted", response_model=list[AnalysisDeletedSourceResponse])
+async def list_deleted_sources(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[AnalysisDeletedSourceResponse]:
+    """回收站列表：本人已软删除的来源。"""
+    sources = await store.deleted_sources(db, current_user.id)
+    return [AnalysisDeletedSourceResponse.model_validate(s) for s in sources]
+
+
 @router.delete("/sources/{sid}", response_model=AnalysisActionResponse)
 async def delete_source(
     sid: str,
-    delete_files: bool = Query(default=False),
+    purge: bool = Query(default=False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AnalysisActionResponse:
-    ok = await store.remove_source(db, sid, current_user.id, delete_files=delete_files)
+    """默认软删除（移入回收站）；purge=true 则彻底删除来源与文件。"""
+    if purge:
+        ok = await store.purge_source(db, sid, current_user.id)
+    else:
+        ok = await store.soft_delete_source(db, sid, current_user.id)
     if not ok:
         raise HTTPException(status_code=404, detail="来源不存在")
     return AnalysisActionResponse(ok=True)
+
+
+@router.post("/sources/{sid}/restore", response_model=AnalysisActionResponse)
+async def restore_source(
+    sid: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AnalysisActionResponse:
+    """从回收站还原来源。"""
+    ok = await store.restore_source(db, sid, current_user.id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="来源不存在")
+    return AnalysisActionResponse(ok=True)
+
+
+@router.post("/sources/{sid}/purge", response_model=AnalysisActionResponse)
+async def purge_source(
+    sid: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AnalysisActionResponse:
+    """彻底删除来源记录及其全部产物文件。"""
+    ok = await store.purge_source(db, sid, current_user.id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="来源不存在")
+    return AnalysisActionResponse(ok=True)
+
+
+@router.post("/from-content-item/{content_item_id}", response_model=AnalysisArtifactResponse)
+async def from_content_item(
+    content_item_id: str,
+    payload: AnalysisFromContentItemRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AnalysisArtifactResponse:
+    """对某条 YouTube 信源内容一键创建下载产物，复用现有 download 链路。"""
+    item = await db.get(ContentItem, content_item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="内容不存在")
+    ds = await db.get(DataSource, item.data_source_id)
+    # 不存在或非本人：统一 404（不泄露他人内容存在）
+    if ds is None or ds.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="内容不存在")
+    if ds.source_type != SourceType.YOUTUBE:
+        raise HTTPException(status_code=400, detail="仅支持对 YouTube 内容创建下载产物")
+    url = (item.content_url or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="该内容缺少可下载的链接")
+    kind = ArtifactType.AUDIO if payload.mode == "audio" else ArtifactType.VIDEO
+    src = await store.get_or_create_source(db, current_user.id, url, title=item.title)
+    art = await store.create_artifact(db, src.id, kind)
+    background_tasks.add_task(runner.run_download, art.id, src.id, url, kind.value)
+    return _artifact_response(art)
 
 
 @router.get("/status", response_model=AnalysisStatusResponse)
@@ -218,6 +296,8 @@ async def status(
         transcribe_backend=backends.active_model_label(),
         youtube_logged_in=cookie_ok,
         cookies_present=cookies.cookies_present(),
+        yt_dlp_available=backends.yt_dlp_available(),
+        ffmpeg_available=backends.ffmpeg_available(),
     )
 
 
@@ -237,3 +317,29 @@ async def login_browser(
 ) -> AnalysisLoginResponse:
     ok, message = cookies.import_from_browser(payload.browser, payload.profile)
     return AnalysisLoginResponse(ok=ok, message=message)
+
+
+@router.post("/login/probe", response_model=AnalysisProbeResponse)
+async def login_probe(
+    current_user: User = Depends(get_current_user),
+) -> AnalysisProbeResponse:
+    """活体探测：实际拉取 YouTube 主页判断登录态。
+
+    网络请求阻塞，放入线程执行以不阻塞事件循环；带超时。三态：
+    logged_in / logged_out / inconclusive。
+    """
+    state, message, _info = await asyncio.to_thread(cookies.live_probe, _PROBE_TIMEOUT)
+    return AnalysisProbeResponse(
+        state=_PROBE_STATE[state],
+        ok=state is True,
+        message=message,
+    )
+
+
+@router.post("/logout", response_model=AnalysisActionResponse)
+async def logout(
+    current_user: User = Depends(get_current_user),
+) -> AnalysisActionResponse:
+    """登出：删除已保存的 YouTube cookies（幂等）。"""
+    cookies.clear_cookies()
+    return AnalysisActionResponse(ok=True, message="已退出 YouTube 登录")

@@ -72,6 +72,10 @@ const messages = {
       statSources: "个信源",
       placeholderHint: "该板块即将接入真实数据，当前为示例内容。",
       placeholderSummary: "后端数据源接入后，这里将展示来自金融时讯、宏观市场等渠道的实时内容。",
+      downloadToAnalysis: "下载/转写",
+      downloadQueued: "已加入下载，前往「内容分析」查看进度",
+      downloadFailed: "下载失败，请稍后重试",
+      goToAnalysis: "前往内容分析",
     },
     dataSources: {
       eyebrow: "信源",
@@ -145,6 +149,28 @@ const messages = {
       confirmDelete: "确定删除该项？",
       textPreview: "文本预览",
       close: "关闭",
+      logout: "退出登录",
+      logoutSuccess: "已退出 YouTube 登录",
+      logoutFailed: "退出登录失败，请稍后重试",
+      reprobe: "重新检测",
+      probing: "检测中…",
+      probeLoggedIn: "已登录，cookies 有效",
+      probeLoggedOut: "登录已失效，请重新导入",
+      probeInconclusive: "无法判定登录状态，请稍后重试",
+      probeFailed: "检测失败，请稍后重试",
+      depsMissing: "下载/转写组件缺失，已暂停相关操作（请安装后重试）",
+      recycleBin: "回收站",
+      recycleBinEmpty: "回收站为空",
+      restore: "还原",
+      restoreSuccess: "已还原来源",
+      restoreFailed: "还原失败，请稍后重试",
+      purge: "彻底清除",
+      purgeSuccess: "已彻底清除",
+      purgeFailed: "清除失败，请稍后重试",
+      confirmPurge: "彻底清除将连同文件一并删除，无法恢复，确定继续？",
+      deletedAt: "删除时间",
+      downloadAll: "一键下载",
+      downloadAllFailed: "批量下载失败，请稍后重试",
     },
     industryReport: {
       eyebrow: "行业研报",
@@ -328,6 +354,10 @@ const messages = {
       statSources: "sources",
       placeholderHint: "This section will connect to live data soon — showing sample content for now.",
       placeholderSummary: "Once data sources are connected, real-time content from finance news and macro market channels will appear here.",
+      downloadToAnalysis: "Download / Transcribe",
+      downloadQueued: "Queued for download — open Content Analysis to track progress",
+      downloadFailed: "Download failed, please retry",
+      goToAnalysis: "Go to Content Analysis",
     },
     dataSources: {
       eyebrow: "Sources",
@@ -402,6 +432,28 @@ const messages = {
       confirmDelete: "Delete this item?",
       textPreview: "Text preview",
       close: "Close",
+      logout: "Sign out",
+      logoutSuccess: "Signed out of YouTube",
+      logoutFailed: "Sign out failed, please retry",
+      reprobe: "Re-check",
+      probing: "Checking…",
+      probeLoggedIn: "Signed in, cookies valid",
+      probeLoggedOut: "Sign-in expired, please re-import",
+      probeInconclusive: "Cannot determine sign-in status, please retry",
+      probeFailed: "Check failed, please retry",
+      depsMissing: "Download/transcribe components missing; related actions are disabled (install and retry)",
+      recycleBin: "Recycle bin",
+      recycleBinEmpty: "Recycle bin is empty",
+      restore: "Restore",
+      restoreSuccess: "Source restored",
+      restoreFailed: "Restore failed, please retry",
+      purge: "Purge",
+      purgeSuccess: "Purged permanently",
+      purgeFailed: "Purge failed, please retry",
+      confirmPurge: "Purging deletes the files permanently and cannot be undone. Continue?",
+      deletedAt: "Deleted at",
+      downloadAll: "Download all",
+      downloadAllFailed: "Batch download failed, please retry",
     },
     industryReport: {
       eyebrow: "Industry Reports",
@@ -582,6 +634,10 @@ export type MessageKey =
   | "feed.statSources"
   | "feed.placeholderHint"
   | "feed.placeholderSummary"
+  | "feed.downloadToAnalysis"
+  | "feed.downloadQueued"
+  | "feed.downloadFailed"
+  | "feed.goToAnalysis"
   | "dataSources.eyebrow"
   | "dataSources.title"
   | "dataSources.addPlaceholder"
@@ -651,6 +707,28 @@ export type MessageKey =
   | "contentAnalysis.confirmDelete"
   | "contentAnalysis.textPreview"
   | "contentAnalysis.close"
+  | "contentAnalysis.logout"
+  | "contentAnalysis.logoutSuccess"
+  | "contentAnalysis.logoutFailed"
+  | "contentAnalysis.reprobe"
+  | "contentAnalysis.probing"
+  | "contentAnalysis.probeLoggedIn"
+  | "contentAnalysis.probeLoggedOut"
+  | "contentAnalysis.probeInconclusive"
+  | "contentAnalysis.probeFailed"
+  | "contentAnalysis.depsMissing"
+  | "contentAnalysis.recycleBin"
+  | "contentAnalysis.recycleBinEmpty"
+  | "contentAnalysis.restore"
+  | "contentAnalysis.restoreSuccess"
+  | "contentAnalysis.restoreFailed"
+  | "contentAnalysis.purge"
+  | "contentAnalysis.purgeSuccess"
+  | "contentAnalysis.purgeFailed"
+  | "contentAnalysis.confirmPurge"
+  | "contentAnalysis.deletedAt"
+  | "contentAnalysis.downloadAll"
+  | "contentAnalysis.downloadAllFailed"
   | "industryReport.eyebrow"
   | "industryReport.title"
   | "industryReport.description"

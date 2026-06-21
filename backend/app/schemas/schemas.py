@@ -346,6 +346,8 @@ class AnalysisStatusResponse(BaseModel):
     transcribe_backend: str
     youtube_logged_in: bool
     cookies_present: bool
+    yt_dlp_available: bool
+    ffmpeg_available: bool
 
 
 class AnalysisLoginCookiesRequest(BaseModel):
@@ -365,3 +367,31 @@ class AnalysisLoginResponse(BaseModel):
 class AnalysisActionResponse(BaseModel):
     ok: bool
     message: str | None = None
+
+
+class AnalysisProbeResponse(BaseModel):
+    """cookies 活体探测结果三态。
+
+    state: logged_in（已登录）/ logged_out（失效）/ inconclusive（无法判定）。
+    """
+
+    state: Literal["logged_in", "logged_out", "inconclusive"]
+    ok: bool
+    message: str | None = None
+
+
+class AnalysisDeletedSourceResponse(BaseModel):
+    """回收站条目：已软删除的来源。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    url: str
+    title: str
+    author: str | None = None
+    created_at: datetime
+    deleted_at: datetime | None = None
+
+
+class AnalysisFromContentItemRequest(BaseModel):
+    mode: Literal["video", "audio"] = "video"

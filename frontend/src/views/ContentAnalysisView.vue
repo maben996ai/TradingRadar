@@ -22,8 +22,23 @@
       <button class="ca-link" :disabled="loggingIn" @click="onLoginBrowser">
         {{ loggingIn ? "…" : t("contentAnalysis.importBrowser") }}
       </button>
+      <button class="ca-link" :disabled="probing" @click="onReprobe">
+        {{ probing ? t("contentAnalysis.probing") : t("contentAnalysis.reprobe") }}
+      </button>
+      <button
+        v-if="status?.youtube_logged_in || status?.cookies_present"
+        class="ca-link ca-del"
+        :disabled="loggingOut"
+        @click="onLogout"
+      >
+        {{ loggingOut ? "…" : t("contentAnalysis.logout") }}
+      </button>
     </div>
     <p v-if="loginMsg" class="muted ca-hint">{{ loginMsg }}</p>
+    <p v-if="probeMsg" :class="['ca-hint', probeClass]">{{ probeMsg }}</p>
+    <p v-if="missingDeps.length" class="ca-error ca-deps-warn">
+      ⚠ {{ t("contentAnalysis.depsMissing") }}: {{ missingDeps.join(", ") }}
+    </p>
 
     <div class="ca-form">
       <input
@@ -36,7 +51,12 @@
         <option value="video">{{ t("contentAnalysis.modeVideo") }}</option>
         <option value="audio">{{ t("contentAnalysis.modeAudio") }}</option>
       </select>
-      <button class="ca-btn" :disabled="downloading" @click="onDownload">
+      <button
+        class="ca-btn"
+        :disabled="downloading || !depsReady"
+        :title="missingDeps.length ? t('contentAnalysis.depsMissing') : ''"
+        @click="onDownload"
+      >
         {{ t("contentAnalysis.download") }}
       </button>
     </div>
@@ -114,6 +134,39 @@
       </div>
     </div>
 
+    <!-- 回收站：已软删除的来源，可还原或彻底清除 -->
+    <div class="ca-recycle">
+      <div class="ca-recycle-head">
+        <strong>{{ t("contentAnalysis.recycleBin") }}</strong>
+        <span class="muted ca-recycle-count">({{ deletedSources.length }})</span>
+      </div>
+      <p v-if="!deletedSources.length" class="muted ca-empty">
+        {{ t("contentAnalysis.recycleBinEmpty") }}
+      </p>
+      <div v-else class="ca-sources">
+        <div v-for="d in deletedSources" :key="d.id" class="ca-source ca-source-deleted">
+          <div class="ca-source-head">
+            <a :href="d.url" target="_blank" rel="noopener" class="ca-source-title">{{ d.title }}</a>
+            <span v-if="d.author" class="muted ca-author">{{ d.author }}</span>
+            <span v-if="d.deleted_at" class="muted ca-author">
+              {{ t("contentAnalysis.deletedAt") }}: {{ d.deleted_at }}
+            </span>
+            <span class="ca-actions">
+              <button class="ca-link" @click="onRestoreSource(d.id)">
+                {{ t("contentAnalysis.restore") }}
+              </button>
+              <button class="ca-link ca-del" @click="onPurgeSource(d.id)">
+                {{ t("contentAnalysis.purge") }}
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+      <p v-if="recycleMsg" :class="['ca-hint', recycleOk ? 'ca-hint-ok' : 'ca-hint-err']">
+        {{ recycleMsg }}
+      </p>
+    </div>
+
     <div v-if="textPreview !== null" class="ca-modal" @click.self="textPreview = null">
       <div class="ca-modal-box">
         <div class="ca-modal-head">
@@ -133,7 +186,12 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { contentAnalysisApi } from "../api/contentAnalysis";
 import { useI18n, type MessageKey } from "../i18n";
-import type { AnalysisSource, AnalysisStatus } from "../types";
+import type {
+  AnalysisDeletedSource,
+  AnalysisProbeState,
+  AnalysisSource,
+  AnalysisStatus,
+} from "../types";
 
 const { t } = useI18n();
 
@@ -149,6 +207,28 @@ const loginMsg = ref("");
 const textPreview = ref<string | null>(null);
 const query = ref("");
 
+// 活体探测三态
+const probing = ref(false);
+const probeMsg = ref("");
+const probeClass = ref("");
+// 登出
+const loggingOut = ref(false);
+// 回收站
+const deletedSources = ref<AnalysisDeletedSource[]>([]);
+const recycleMsg = ref("");
+const recycleOk = ref(true);
+
+const PROBE_KEYS: Record<AnalysisProbeState, MessageKey> = {
+  logged_in: "contentAnalysis.probeLoggedIn",
+  logged_out: "contentAnalysis.probeLoggedOut",
+  inconclusive: "contentAnalysis.probeInconclusive",
+};
+const PROBE_CLASS: Record<AnalysisProbeState, string> = {
+  logged_in: "ca-hint-ok",
+  logged_out: "ca-hint-err",
+  inconclusive: "ca-hint-warn",
+};
+
 let timer: number | undefined;
 let searchTimer: number | undefined;
 
@@ -157,6 +237,17 @@ const hasActive = computed(() =>
     s.artifacts.some((a) => ["queued", "running", "processing"].includes(a.status)),
   ),
 );
+
+// 下载/转写依赖的运行期组件缺失时禁用入口，避免点了之后后台静默报错。
+const missingDeps = computed<string[]>(() => {
+  const s = status.value;
+  if (!s) return [];
+  const missing: string[] = [];
+  if (!s.yt_dlp_available) missing.push("yt-dlp");
+  if (!s.ffmpeg_available) missing.push("ffmpeg");
+  return missing;
+});
+const depsReady = computed(() => !!status.value && missingDeps.value.length === 0);
 
 const STATUS_KEYS: Record<string, MessageKey> = {
   queued: "contentAnalysis.statusQueued",
@@ -248,8 +339,82 @@ async function onDeleteArtifact(id: string) {
 
 async function onDeleteSource(id: string) {
   if (!window.confirm(t("contentAnalysis.confirmDelete"))) return;
-  await contentAnalysisApi.deleteSource(id, true);
-  await loadList();
+  // 软删除：移入回收站（purge=false）
+  await contentAnalysisApi.deleteSource(id, false);
+  await Promise.all([loadList(), loadDeleted()]);
+}
+
+async function loadDeleted() {
+  try {
+    deletedSources.value = (await contentAnalysisApi.deletedSources()).data;
+  } catch {
+    // 回收站拉取失败不阻断
+  }
+}
+
+async function onRestoreSource(id: string) {
+  recycleMsg.value = "";
+  try {
+    const { data } = await contentAnalysisApi.restoreSource(id);
+    recycleOk.value = data.ok;
+    recycleMsg.value = data.ok
+      ? data.message || t("contentAnalysis.restoreSuccess")
+      : data.message || t("contentAnalysis.restoreFailed");
+    await Promise.all([loadList(), loadDeleted()]);
+  } catch {
+    recycleOk.value = false;
+    recycleMsg.value = t("contentAnalysis.restoreFailed");
+  }
+}
+
+async function onPurgeSource(id: string) {
+  if (!window.confirm(t("contentAnalysis.confirmPurge"))) return;
+  recycleMsg.value = "";
+  try {
+    const { data } = await contentAnalysisApi.purgeSource(id);
+    recycleOk.value = data.ok;
+    recycleMsg.value = data.ok
+      ? data.message || t("contentAnalysis.purgeSuccess")
+      : data.message || t("contentAnalysis.purgeFailed");
+    await loadDeleted();
+  } catch {
+    recycleOk.value = false;
+    recycleMsg.value = t("contentAnalysis.purgeFailed");
+  }
+}
+
+async function onReprobe() {
+  probing.value = true;
+  probeMsg.value = "";
+  try {
+    const { data } = await contentAnalysisApi.probe();
+    probeMsg.value = data.message || t(PROBE_KEYS[data.state]);
+    probeClass.value = PROBE_CLASS[data.state] ?? "ca-hint-warn";
+    await loadStatus();
+  } catch {
+    probeMsg.value = t("contentAnalysis.probeFailed");
+    probeClass.value = "ca-hint-err";
+  } finally {
+    probing.value = false;
+  }
+}
+
+async function onLogout() {
+  loggingOut.value = true;
+  probeMsg.value = "";
+  try {
+    const { data } = await contentAnalysisApi.logout();
+    probeMsg.value = data.ok
+      ? data.message || t("contentAnalysis.logoutSuccess")
+      : data.message || t("contentAnalysis.logoutFailed");
+    probeClass.value = data.ok ? "ca-hint-ok" : "ca-hint-err";
+    await loadStatus();
+  } catch {
+    probeMsg.value = t("contentAnalysis.logoutFailed");
+    probeClass.value = "ca-hint-err";
+  } finally {
+    loggingOut.value = false;
+  }
 }
 
 async function onViewText(id: string) {
@@ -278,7 +443,7 @@ async function onLoginBrowser() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadStatus(), loadList()]);
+  await Promise.all([loadStatus(), loadList(), loadDeleted()]);
   schedulePoll();
 });
 
@@ -362,6 +527,37 @@ onUnmounted(() => {
 .ca-error {
   color: #dc2626;
   margin: 0.4rem 0;
+}
+.ca-hint {
+  margin: 0.3rem 0;
+  font-size: 0.85rem;
+}
+.ca-hint-ok {
+  color: #16a34a;
+}
+.ca-hint-warn {
+  color: #d97706;
+}
+.ca-hint-err {
+  color: #dc2626;
+}
+.ca-recycle {
+  margin-top: 1.4rem;
+  border-top: 1px dashed var(--border, #eaecef);
+  padding-top: 0.9rem;
+}
+.ca-recycle-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.ca-recycle-count {
+  font-size: 0.85rem;
+}
+.ca-source-deleted {
+  opacity: 0.85;
+  background: rgba(107, 114, 128, 0.05);
 }
 .ca-search {
   width: 100%;

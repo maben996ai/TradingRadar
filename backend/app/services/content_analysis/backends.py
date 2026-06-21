@@ -5,10 +5,26 @@
 """
 
 import os
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
 from app.core.config import get_settings
+
+
+def yt_dlp_available() -> bool:
+    """下载依赖 yt-dlp 是否已安装（声明在 requirements，但镜像/环境可能漏装）。"""
+    try:
+        import yt_dlp  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
+def ffmpeg_available() -> bool:
+    """转码/转 mp3/合并音视频/Whisper 读音频依赖系统 ffmpeg。"""
+    return shutil.which("ffmpeg") is not None
 
 PO_TOKEN_ERROR = "No video formats found"
 _AUTH_ERROR_SIGNS = (

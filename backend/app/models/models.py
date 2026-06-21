@@ -273,6 +273,8 @@ class AnalysisSource(Base):
     title: Mapped[str] = mapped_column(String(500))
     author: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # 软删除：非空表示已移入回收站，list_sources 默认排除
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     artifacts: Mapped[list["AnalysisArtifact"]] = relationship(
         back_populates="source", cascade="all, delete-orphan"
